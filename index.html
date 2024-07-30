@@ -27,7 +27,6 @@
             height: 600px;
             border: 1px solid #ccc;
             margin-top: 20px;
-            position: relative;
         }
         #shareableLink, #statusMessage, #debugMessage {
             margin-top: 20px;
@@ -57,13 +56,14 @@
             left: 0;
             width: 100%;
             height: 100%;
-            background-color: rgba(0, 0, 0, 0.8);
+            background-color: black;
             display: flex;
             justify-content: center;
             align-items: center;
             font-size: 24px;
             color: white;
             z-index: 1000;
+            pointer-events: none;
         }
     </style>
 </head>
@@ -71,10 +71,7 @@
     <input type="file" id="fileInput" accept="application/pdf">
     <button id="uploadButton" disabled>Upload to Google Drive</button>
     <button id="generateLinkButton" disabled>Generate Shareable Link</button>
-    <div id="viewArea">
-        <div id="pdf-content"></div>
-        <div id="protection-overlay">PROTECTED CONTENT</div>
-    </div>
+    <div id="viewArea"></div>
     <div id="shareableLink"></div>
     <div id="statusMessage"></div>
     <div id="debugMessage"></div>
@@ -201,18 +198,14 @@
         }
 
         function displayFile(fileId) {
-            const pdfContent = document.getElementById('pdf-content');
-            pdfContent.innerHTML = `<iframe src="https://drive.google.com/file/d/${fileId}/preview" width="100%" height="600"></iframe>`;
-            
-            // Show the protection overlay by default
-            document.getElementById('protection-overlay').style.display = 'flex';
+            viewArea.innerHTML = <iframe src="https://drive.google.com/file/d/${fileId}/preview" width="100%" height="600"></iframe>;
         }
 
         function generateShareableLink() {
             const currentUrl = window.location.href.split('?')[0];
             const fileId = viewArea.querySelector('iframe').src.split('/')[5];
-            const shareableLink = `${currentUrl}?fileId=${fileId}`;
-            shareableLinkDiv.textContent = `Shareable Link: ${shareableLink}`;
+            const shareableLink = ${currentUrl}?fileId=${fileId};
+            shareableLinkDiv.textContent = Shareable Link: ${shareableLink};
         }
 
         function showStatus(message) {
@@ -221,13 +214,13 @@
 
         function showError(message, error) {
             console.error(message, error);
-            statusMessageDiv.textContent = `${message}: ${error.message || JSON.stringify(error)}`;
+            statusMessageDiv.textContent = ${message}: ${error.message || JSON.stringify(error)};
             showDebug('Error details', error);
         }
 
         function showDebug(label, data) {
             console.log(label, data);
-            debugMessageDiv.textContent += `\n${label}:\n${JSON.stringify(data, null, 2)}`;
+            debugMessageDiv.textContent += \n${label}:\n${JSON.stringify(data, null, 2)};
         }
 
         const urlParams = new URLSearchParams(window.location.search);
@@ -235,33 +228,33 @@
         if (fileId) {
             displayFile(fileId);
             generateLinkButton.disabled = false;
-            // Ensure the protection overlay is visible on load
-            document.getElementById('protection-overlay').style.display = 'flex';
         }
 
-        // Modified protection mechanism
-        const protectionOverlay = document.getElementById('protection-overlay');
+        // Protection mechanism
+        const pdfContent = document.createElement('div');
+        pdfContent.id = 'pdf-content';
+        pdfContent.style.position = 'relative';
+        viewArea.appendChild(pdfContent);
 
-        viewArea.addEventListener('mouseenter', () => {
-            protectionOverlay.style.display = 'none';
-        });
-        viewArea.addEventListener('mouseleave', () => {
+        const protectionOverlay = document.createElement('div');
+        protectionOverlay.id = 'protection-overlay';
+        protectionOverlay.textContent = 'PROTECTED CONTENT';
+        pdfContent.appendChild(protectionOverlay);
+
+        pdfContent.addEventListener('mousemove', () => {
             protectionOverlay.style.display = 'flex';
         });
+        pdfContent.addEventListener('mouseleave', () => {
+            protectionOverlay.style.display = 'none';
+        });
         document.addEventListener('keydown', (e) => {
-            if (e.key === 'Meta' || e.key === 'Control' || e.key === 'Alt' || e.key === 'Windows') {
+            if (e.key === 'Meta' || e.key === 'Windows') {
                 e.preventDefault();
                 protectionOverlay.style.display = 'flex';
             }
         });
-        document.addEventListener('keyup', (e) => {
-            if (e.key === 'Meta' || e.key === 'Control' || e.key === 'Alt' || e.key === 'Windows') {
-                protectionOverlay.style.display = 'none';
-            }
-        });
         document.addEventListener('contextmenu', (e) => {
             e.preventDefault();
-            protectionOverlay.style.display = 'flex';
         });
     </script>
     <script async defer src="https://apis.google.com/js/api.js" onload="gapiLoaded()"></script>
