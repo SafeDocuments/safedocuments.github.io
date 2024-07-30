@@ -313,13 +313,7 @@
             }
         });
 
-        // Check if there's a fileName in the URL parameters
-        const urlParams = new URLSearchParams(window.location.search);
-        const fileName = urlParams.get('fileName');
-        if (fileName) {
-            showStatus(`Shared file: ${fileName}`);
-        }
-        // Function to fetch and load PDF from Google Drive
+       
 async function loadPDFfromDrive(fileId) {
     try {console.log("loadPDFfromDrive");
         const accessToken = gapi.auth.getToken().access_token;
