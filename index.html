@@ -1,34 +1,75 @@
-<!DOCTYPE html>
+     <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PDF Upload and Google Drive Viewer</title>
+    <title>Protected PDF Viewer with Google Drive Integration</title>
     <script src="https://apis.google.com/js/api.js"></script>
     <script src="https://accounts.google.com/gsi/client"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.9.359/pdf.min.js"></script>
     <style>
-        body {
-            font-family: Arial, sans-serif;
+        body, html {
             margin: 0;
-            padding: 20px;
+            padding: 0;
+            height: 100%;
+            font-family: Arial, sans-serif;
+        }
+        .container {
             display: flex;
             flex-direction: column;
+            height: 100vh;
+        }
+        #top-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px;
+            background-color: #f0f0f0;
+        }
+        #pdf-viewer {
+            flex-grow: 1;
+            width: 100%;
+            overflow: hidden;
+            position: relative;
+        }
+        #pdf-content {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            justify-content: center;
             align-items: center;
         }
-        #fileInput, #uploadButton, #generateLinkButton {
-            margin: 10px 0;
-            padding: 10px;
-            font-size: 16px;
-        }
-        #viewArea {
+        #protection-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
             width: 100%;
-            height: 600px;
-            border: 1px solid #ccc;
-            margin-top: 20px;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.7);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 24px;
+            color: white;
+            z-index: 1000;
+            pointer-events: none;
         }
-        #shareableLink, #statusMessage, #debugMessage {
-            margin-top: 20px;
-            word-break: break-all;
+        #navigation {
+            display: flex;
+            align-items: center;
+        }
+        #navigation button, #uploadButton, #generateLinkButton {
+            margin: 0 5px;
+            padding: 5px 10px;
+        }
+        #page-num {
+            margin: 0 10px;
+        }
+        #statusMessage, #shareableLink, #debugMessage {
+            margin-top: 10px;
         }
         #statusMessage {
             color: #d32f2f;
@@ -38,18 +79,35 @@
             font-family: monospace;
             white-space: pre-wrap;
         }
+        canvas {
+            max-width: 100%;
+            max-height: 100%;
+        }
     </style>
 </head>
 <body>
-    <input type="file" id="fileInput" accept="application/pdf">
-    <button id="uploadButton" disabled>Upload to Google Drive</button>
-    <button id="generateLinkButton" disabled>Generate Shareable Link</button>
-    <div id="viewArea"></div>
-    <div id="shareableLink"></div>
+    <div class="container">
+        <div id="top-bar">
+            <input type="file" id="fileInput" accept="application/pdf">
+            <button id="uploadButton" disabled>Upload to Google Drive</button>
+            <button id="generateLinkButton" disabled>Generate Shareable Link</button>
+            <div id="navigation">
+                <button id="prev">Previous</button>
+                <span id="page-num"></span>
+                <button id="next">Next</button>
+            </div>
+        </div>
+        <div id="pdf-viewer">
+            <div id="pdf-content"></div>
+            <div id="protection-overlay">PROTECTED CONTENT</div>
+        </div>
+    </div>
     <div id="statusMessage"></div>
+    <div id="shareableLink"></div>
     <div id="debugMessage"></div>
 
     <script>
+        // Replace these with your own Google API credentials
         const CLIENT_ID = '480657269781-3oo277sppsmm2qj1i7uku5dvfbncghsv.apps.googleusercontent.com';
         const API_KEY = 'AIzaSyCawbOm-B5FGvuFNszpZrrpkpOYugaGHE8';
         const DISCOVERY_DOC = 'https://www.googleapis.com/discovery/v1/apis/drive/v3/rest';
@@ -63,10 +121,20 @@
         const uploadButton = document.getElementById('uploadButton');
         const generateLinkButton = document.getElementById('generateLinkButton');
         const fileInput = document.getElementById('fileInput');
-        const viewArea = document.getElementById('viewArea');
-        const shareableLinkDiv = document.getElementById('shareableLink');
+        const pdfViewer = document.getElementById('pdf-viewer');
+        const pdfContent = document.getElementById('pdf-content');
+        const protectionOverlay = document.getElementById('protection-overlay');
+        const prevButton = document.getElementById('prev');
+        const nextButton = document.getElementById('next');
+        const pageNum = document.getElementById('page-num');
         const statusMessageDiv = document.getElementById('statusMessage');
+        const shareableLinkDiv = document.getElementById('shareableLink');
         const debugMessageDiv = document.getElementById('debugMessage');
+
+        let currentPdf = null;
+        let currentPage = 1;
+        let totalPages = 0;
+        let currentFileId = null;
 
         function gapiLoaded() {
             gapi.load('client', initializeGapiClient);
@@ -103,7 +171,13 @@
 
         uploadButton.addEventListener('click', handleAuthClick);
         generateLinkButton.addEventListener('click', generateShareableLink);
-        fileInput.addEventListener('change', () => uploadButton.disabled = false);
+        fileInput.addEventListener('change', () => {
+            uploadButton.disabled = false;
+            const file = fileInput.files[0];
+            if (file) {
+                loadPDFFromFile(file);
+            }
+        });
 
         function handleAuthClick() {
             tokenClient.callback = async (resp) => {
@@ -137,7 +211,7 @@
             const metadata = {
                 'name': file.name,
                 'mimeType': file.type,
-                'parents': [FOLDER_ID]
+                'parents': FOLDER_ID ? [FOLDER_ID] : []
             };
 
             showDebug('Metadata', metadata);
@@ -161,7 +235,7 @@
                     showStatus('File uploaded successfully!');
                     showDebug('Upload response', result);
                     generateLinkButton.disabled = false;
-                    displayFile(result.id);
+                    currentFileId = result.id;
                 } else {
                     throw new Error(result.error.message);
                 }
@@ -170,14 +244,13 @@
             }
         }
 
-        function displayFile(fileId) {
-            viewArea.innerHTML = `<iframe src="https://drive.google.com/file/d/${fileId}/preview" width="100%" height="100%"></iframe>`;
-        }
-
         function generateShareableLink() {
+            if (!currentFileId) {
+                showStatus('No file has been uploaded yet.');
+                return;
+            }
             const currentUrl = window.location.href.split('?')[0];
-            const fileId = viewArea.querySelector('iframe').src.split('/')[5];
-            const shareableLink = `${currentUrl}?fileId=${fileId}`;
+            const shareableLink = `${currentUrl}?fileId=${currentFileId}`;
             shareableLinkDiv.textContent = `Shareable Link: ${shareableLink}`;
         }
 
@@ -196,13 +269,125 @@
             debugMessageDiv.textContent += `\n${label}:\n${JSON.stringify(data, null, 2)}`;
         }
 
+        // PDF.js functionality
+        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.9.359/pdf.worker.min.js';
+
+        function loadPDFFromFile(file) {
+            const fileReader = new FileReader();
+            fileReader.onload = function() {
+                const typedarray = new Uint8Array(this.result);
+                pdfjsLib.getDocument(typedarray).promise.then(loadPDF);
+            };
+            fileReader.readAsArrayBuffer(file);
+        }
+
+        function loadPDF(pdf) {
+            currentPdf = pdf;
+            totalPages = pdf.numPages;
+            currentPage = 1;
+            renderPage(currentPage);
+            updatePageNum();
+        }
+
+        function renderPage(pageNumber) {
+            currentPdf.getPage(pageNumber).then(function(page) {
+                const viewport = page.getViewport({ scale: 1 });
+                const canvas = document.createElement('canvas');
+                const context = canvas.getContext('2d');
+
+                const scaleX = pdfContent.clientWidth / viewport.width;
+                const scaleY = pdfContent.clientHeight / viewport.height;
+                const scale = Math.min(scaleX, scaleY);
+
+                const scaledViewport = page.getViewport({ scale: scale });
+
+                canvas.height = scaledViewport.height;
+                canvas.width = scaledViewport.width;
+
+                const renderContext = {
+                    canvasContext: context,
+                    viewport: scaledViewport
+                };
+
+                page.render(renderContext);
+
+                pdfContent.innerHTML = '';
+                pdfContent.appendChild(canvas);
+            });
+        }
+
+        function updatePageNum() {
+            pageNum.textContent = `Page ${currentPage} of ${totalPages}`;
+            prevButton.disabled = currentPage === 1;
+            nextButton.disabled = currentPage === totalPages;
+        }
+
+        prevButton.addEventListener('click', function() {
+            if (currentPage > 1) {
+                currentPage--;
+                renderPage(currentPage);
+                updatePageNum();
+            }
+        });
+
+        nextButton.addEventListener('click', function() {
+            if (currentPage < totalPages) {
+                currentPage++;
+                renderPage(currentPage);
+                updatePageNum();
+            }
+        });
+
+        function startProtection() {
+            protectionOverlay.style.display = 'flex';
+        }
+
+        function stopProtection() {
+            protectionOverlay.style.display = 'none';
+        }
+
+        pdfContent.addEventListener('mousemove', startProtection);
+        pdfContent.addEventListener('mouseleave', stopProtection);
+
+        document.getElementById('top-bar').addEventListener('mouseover', stopProtection);
+        document.getElementById('top-bar').addEventListener('mouseleave', startProtection);
+
+        document.addEventListener('keydown', function(e) {
+            if (e.ctrlKey && e.key === 'p') {
+                e.preventDefault();
+            }
+            if (e.key === 'PrintScreen') {
+                e.preventDefault();
+            }
+            startProtection();
+        });
+
+        document.addEventListener('keyup', stopProtection);
+
+        document.addEventListener('contextmenu', function(e) {
+            e.preventDefault();
+        });
+
+        window.addEventListener('resize', function() {
+            if (currentPdf) {
+                renderPage(currentPage);
+            }
+        });
+
+        window.addEventListener('blur', startProtection);
+        window.addEventListener('focus', stopProtection);
+
         // Check if there's a fileId in the URL parameters
         const urlParams = new URLSearchParams(window.location.search);
         const fileId = urlParams.get('fileId');
         if (fileId) {
-            displayFile(fileId);
-            generateLinkButton.disabled = false;
+            // TODO: Implement loading the file from Google Drive using the fileId
+            // This would require additional Google Drive API calls
+            showStatus('Loading shared file...');
         }
+
+        // Initial state: protection on
+        startProtection();
     </script>
     <script async defer src="https://apis.google.com/js/api.js" onload="gapiLoaded()"></script>
     <script async defer src="https://accounts.google.com/gsi/client" onload="gisLoaded()"></script>
