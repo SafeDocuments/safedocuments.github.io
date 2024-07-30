@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>vfgolden2</title>
+    <title>vfgolden</title>
     <script src="https://apis.google.com/js/api.js"></script>
     <script src="https://accounts.google.com/gsi/client"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.9.359/pdf.min.js"></script>
@@ -311,6 +311,7 @@
             currentPage = 1;
             renderPage(currentPage);
             updatePageNum();
+            startProtection(); // Ensure protection starts as soon as the PDF is loaded
         }
 
         function renderPage(pageNumber) {
@@ -424,8 +425,15 @@
             if (fileId) {
                 showStatus('Loading shared file...');
                 await loadPDFFromGoogleDrive(fileId);
-                startProtection();
+                startProtection(); // Ensure protection starts immediately when the PDF is loaded from a shareable link
+                disableControls(); // Disable upload and generate link buttons
             }
+        }
+
+        function disableControls() {
+            fileInput.disabled = true;
+            uploadButton.disabled = true;
+            generateLinkButton.disabled = true;
         }
 
         startProtection();
