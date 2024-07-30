@@ -3,24 +3,18 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PDF Upload and Protected Viewer</title>
-    <script src="https://apis.google.com/js/api.js"></script>
-    <script src="https://accounts.google.com/gsi/client"></script>
+    <title>PDF Upload and Custom Viewer</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.9.359/pdf.min.js"></script>
     <style>
-        body, html {
-            margin: 0;
-            padding: 0;
-            height: 100%;
+        body {
             font-family: Arial, sans-serif;
-        }
-        #uploadSection {
+            margin: 0;
+            padding: 20px;
             display: flex;
             flex-direction: column;
             align-items: center;
-            padding: 20px;
         }
-        #uploadSection input, #uploadSection button {
+        #fileInput, #uploadButton, #generateLinkButton {
             margin: 10px 0;
             padding: 10px;
             font-size: 16px;
@@ -30,35 +24,6 @@
             height: 600px;
             border: 1px solid #ccc;
             margin-top: 20px;
-        }
-        #shareableLink, #statusMessage, #debugMessage {
-            margin-top: 20px;
-            word-break: break-all;
-        }
-        #statusMessage {
-            color: #d32f2f;
-        }
-        #debugMessage {
-            color: #1565c0;
-            font-family: monospace;
-            white-space: pre-wrap;
-        }
-        .container {
-            display: flex;
-            flex-direction: column;
-            height: 100vh;
-        }
-        #top-bar {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 10px;
-            background-color: #f0f0f0;
-        }
-        #pdf-viewer {
-            flex-grow: 1;
-            width: 100%;
-            overflow: hidden;
             position: relative;
         }
         #pdf-content {
@@ -71,24 +36,10 @@
             justify-content: center;
             align-items: center;
         }
-        #protection-overlay {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background-color: black;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            font-size: 24px;
-            color: white;
-            z-index: 1000;
-            pointer-events: none;
-        }
         #navigation {
             display: flex;
             align-items: center;
+            margin-top: 10px;
         }
         #navigation button {
             margin: 0 5px;
@@ -97,6 +48,18 @@
         #page-num {
             margin: 0 10px;
         }
+        #statusMessage, #debugMessage {
+            margin-top: 20px;
+            word-break: break-all;
+        }
+        #statusMessage {
+            color: #d32f2f;
+        }
+        #debugMessage {
+            color: #1565c0;
+            font-family: monospace;
+            white-space: pre-wrap;
+        }
         canvas {
             max-width: 100%;
             max-height: 100%;
@@ -104,30 +67,19 @@
     </style>
 </head>
 <body>
-    <div id="uploadSection">
-        <input type="file" id="fileInput" accept="application/pdf">
-        <button id="uploadButton" disabled>Upload to Google Drive</button>
-        <button id="generateLinkButton" disabled>Generate Shareable Link</button>
-        <div id="viewArea"></div>
-        <div id="shareableLink"></div>
-        <div id="statusMessage"></div>
-        <div id="debugMessage"></div>
+    <input type="file" id="fileInput" accept="application/pdf">
+    <button id="uploadButton" disabled>Upload to Google Drive</button>
+    <button id="generateLinkButton" disabled>Generate Shareable Link</button>
+    <div id="viewArea">
+        <div id="pdf-content"></div>
     </div>
-
-    <div class="container">
-        <div id="top-bar">
-            <div id="navigation">
-                <button id="prev">Previous</button>
-                <span id="page-num"></span>
-                <button id="next">Next</button>
-            </div>
-            <div id="error-message"></div>
-        </div>
-        <div id="pdf-viewer">
-            <div id="pdf-content"></div>
-            <div id="protection-overlay">PROTECTED CONTENT</div>
-        </div>
+    <div id="navigation">
+        <button id="prev" disabled>Previous</button>
+        <span id="page-num"></span>
+        <button id="next" disabled>Next</button>
     </div>
+    <div id="statusMessage"></div>
+    <div id="debugMessage"></div>
 
     <script>
         const CLIENT_ID = '480657269781-3oo277sppsmm2qj1i7uku5dvfbncghsv.apps.googleusercontent.com';
@@ -144,22 +96,16 @@
         const generateLinkButton = document.getElementById('generateLinkButton');
         const fileInput = document.getElementById('fileInput');
         const viewArea = document.getElementById('viewArea');
-        const shareableLinkDiv = document.getElementById('shareableLink');
+        const pdfContent = document.getElementById('pdf-content');
         const statusMessageDiv = document.getElementById('statusMessage');
         const debugMessageDiv = document.getElementById('debugMessage');
-        const pdfViewer = document.getElementById('pdf-viewer');
-        const pdfContent = document.getElementById('pdf-content');
-        const protectionOverlay = document.getElementById('protection-overlay');
-        const errorMessage = document.getElementById('error-message');
         const prevButton = document.getElementById('prev');
         const nextButton = document.getElementById('next');
         const pageNum = document.getElementById('page-num');
-        const topBar = document.getElementById('top-bar');
 
         let currentPdf = null;
         let currentPage = 1;
         let totalPages = 0;
-        let isWindowsKeyPressed = false;
 
         function gapiLoaded() {
             gapi.load('client', initializeGapiClient);
@@ -196,7 +142,15 @@
 
         uploadButton.addEventListener('click', handleAuthClick);
         generateLinkButton.addEventListener('click', generateShareableLink);
-        fileInput.addEventListener('change', () => uploadButton.disabled = false);
+        fileInput.addEventListener('change', handleFileSelect);
+
+        function handleFileSelect(event) {
+            const file = event.target.files[0];
+            if (file) {
+                uploadButton.disabled = false;
+                renderPDF(file);
+            }
+        }
 
         function handleAuthClick() {
             tokenClient.callback = async (resp) => {
@@ -264,7 +218,7 @@
         }
 
         function displayFile(fileId) {
-            viewArea.innerHTML = `<iframe src="https://drive.google.com/file/d/${fileId}/preview" width="100%" height="100%"></iframe>`;
+            renderPDF(fileInput.files[0]);
         }
 
         function generateShareableLink() {
@@ -274,30 +228,25 @@
             shareableLinkDiv.textContent = `Shareable Link: ${shareableLink}`;
         }
 
-        function showStatus(message) {
-            statusMessageDiv.textContent = message;
-        }
+        function renderPDF(file) {
+            const fileReader = new FileReader();
 
-        function showError(message, error) {
-            console.error(message, error);
-            statusMessageDiv.textContent = `${message}: ${error.message || JSON.stringify(error)}`;
-            showDebug('Error details', error);
-        }
+            fileReader.onload = function () {
+                const typedarray = new Uint8Array(this.result);
 
-        function showDebug(label, data) {
-            console.log(label, data);
-            debugMessageDiv.textContent += `\n${label}:\n${JSON.stringify(data, null, 2)}`;
-        }
-
-        const urlParams = new URLSearchParams(window.location.search);
-        const fileId = urlParams.get('fileId');
-        if (fileId) {
-            displayFile(fileId);
-            generateLinkButton.disabled = false;
+                pdfjsLib.getDocument(typedarray).promise.then(function (pdf) {
+                    currentPdf = pdf;
+                    totalPages = pdf.numPages;
+                    currentPage = 1;
+                    renderPage(currentPage);
+                    updatePageNum();
+                });
+            };
+            fileReader.readAsArrayBuffer(file);
         }
 
         function renderPage(pageNumber) {
-            currentPdf.getPage(pageNumber).then(function(page) {
+            currentPdf.getPage(pageNumber).then(function (page) {
                 const viewport = page.getViewport({ scale: 1 });
                 const canvas = document.createElement('canvas');
                 const context = canvas.getContext('2d');
@@ -323,37 +272,13 @@
             });
         }
 
-        function loadPDF(pdf) {
-            currentPdf = pdf;
-            totalPages = pdf.numPages;
-            currentPage = 1;
-            renderPage(currentPage);
-            updatePageNum();
-        }
-
         function updatePageNum() {
             pageNum.textContent = `Page ${currentPage} of ${totalPages}`;
             prevButton.disabled = currentPage === 1;
             nextButton.disabled = currentPage === totalPages;
         }
 
-        fileInput.addEventListener('change', function(e) {
-            const file = e.target.files[0];
-            if (file.type !== 'application/pdf') {
-                errorMessage.textContent = 'Please select a PDF file.';
-                return;
-            }
-
-            const fileReader = new FileReader();
-            fileReader.onload = function() {
-                const typedarray = new Uint8Array(this.result);
-
-                pdfjsLib.getDocument(typedarray).promise.then(loadPDF);
-            };
-            fileReader.readAsArrayBuffer(file);
-        });
-
-        prevButton.addEventListener('click', function() {
+        prevButton.addEventListener('click', function () {
             if (currentPage > 1) {
                 currentPage--;
                 renderPage(currentPage);
@@ -361,7 +286,7 @@
             }
         });
 
-        nextButton.addEventListener('click', function() {
+        nextButton.addEventListener('click', function () {
             if (currentPage < totalPages) {
                 currentPage++;
                 renderPage(currentPage);
@@ -369,54 +294,34 @@
             }
         });
 
-        function startProtection() {
-            protectionOverlay.style.display = 'flex';
+        function showStatus(message) {
+            statusMessageDiv.textContent = message;
         }
 
-        function stopProtection() {
-            protectionOverlay.style.display = 'none';
+        function showError(message, error) {
+            console.error(message, error);
+            statusMessageDiv.textContent = `${message}: ${error.message || JSON.stringify(error)}`;
+            showDebug('Error details', error);
         }
 
-        pdfContent.addEventListener('mousemove', startProtection);
-        pdfContent.addEventListener('mouseleave', stopProtection);
+        function showDebug(label, data) {
+            console.log(label, data);
+            debugMessageDiv.textContent += `\n${label}:\n${JSON.stringify(data, null, 2)}`;
+        }
 
-        topBar.addEventListener('mouseover', stopProtection);
-        topBar.addEventListener('mouseleave', startProtection);
-
-        document.addEventListener('keydown', function(e) {
-            if (e.key === 'Meta' || e.key === 'Windows') {
-                isWindowsKeyPressed = true;
-            }
-            if (e.ctrlKey && e.key === 'p') {
-                e.preventDefault();
-            }
-            if (isWindowsKeyPressed && e.key === 'PrintScreen') {
-                e.preventDefault();
-            }
-            startProtection();
-        });
-
-        document.addEventListener('keyup', function(e) {
-            if (e.key === 'Meta' || e.key === 'Windows') {
-                isWindowsKeyPressed = false;
-            }
-            stopProtection();
-        });
-
-        document.addEventListener('contextmenu', function(e) {
-            e.preventDefault();
-        });
-
-        window.addEventListener('resize', function() {
+        window.addEventListener('resize', function () {
             if (currentPdf) {
                 renderPage(currentPage);
             }
         });
 
-        window.addEventListener('blur', startProtection);
-        window.addEventListener('focus', stopProtection);
-
-        startProtection();
+        // Check if there's a fileId in the URL parameters
+        const urlParams = new URLSearchParams(window.location.search);
+        const fileId = urlParams.get('fileId');
+        if (fileId) {
+            displayFile(fileId);
+            generateLinkButton.disabled = false;
+        }
     </script>
     <script async defer src="https://apis.google.com/js/api.js" onload="gapiLoaded()"></script>
     <script async defer src="https://accounts.google.com/gsi/client" onload="gisLoaded()"></script>
