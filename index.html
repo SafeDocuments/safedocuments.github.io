@@ -50,13 +50,7 @@
             height: auto;
         }
 
-        #fileInput {
-            flex-grow: 1;
-            margin-right: 10px;
-            color: #f7f7f7;
-        }
-
-        button, #uploadButton, #generateLinkButton {
+        #fileInput, #uploadButton, #generateLinkButton {
             margin: 0 5px;
             padding: 8px 12px;
             background-color: #00a86b;
@@ -67,13 +61,27 @@
             transition: background-color 0.3s ease;
         }
 
-        button:disabled, #uploadButton:disabled, #generateLinkButton:disabled {
+        #fileInput:disabled, #uploadButton:disabled, #generateLinkButton:disabled {
             background-color: #444;
             cursor: not-allowed;
         }
 
-        button:hover:enabled, #uploadButton:hover:enabled, #generateLinkButton:hover:enabled {
+        #fileInput:hover:enabled, #uploadButton:hover:enabled, #generateLinkButton:hover:enabled {
             background-color: #007bff;
+        }
+
+        #button-group {
+            display: flex;
+            align-items: center;
+        }
+
+        #navigation {
+            display: flex;
+            align-items: center;
+        }
+
+        #page-num {
+            margin: 0 10px;
         }
 
         #pdf-viewer {
@@ -114,15 +122,6 @@
             color: white;
             z-index: 1000;
             pointer-events: none;
-        }
-
-        #navigation {
-            display: flex;
-            align-items: center;
-        }
-
-        #page-num {
-            margin: 0 10px;
         }
 
         #statusMessage {
@@ -182,9 +181,11 @@
             <div id="logo">
                 <img src="https://github.com/SafeDocuments/safedocuments.github.io/blob/main/pikaso_enhance__none_4K_Standard_r_c_.jpeg?raw=true" alt="Safe Documents Logo">
             </div>
-            <input type="file" id="fileInput" accept="application/pdf">
-            <button id="uploadButton" disabled>Upload to Google Drive</button>
-            <button id="generateLinkButton" disabled>Generate Shareable Link</button>
+            <div id="button-group">
+                <input type="file" id="fileInput" accept="application/pdf">
+                <button id="uploadButton" disabled>Upload to Google Drive</button>
+                <button id="generateLinkButton" disabled>Generate Shareable Link</button>
+            </div>
             <div id="navigation">
                 <button id="prev">Previous</button>
                 <span id="page-num"></span>
