@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>vfgolden1</title>
+    <title>vfgolden</title>
     <script src="https://apis.google.com/js/api.js"></script>
     <script src="https://accounts.google.com/gsi/client"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.9.359/pdf.min.js"></script>
@@ -377,6 +377,31 @@
         document.getElementById('top-bar').addEventListener('mouseover', stopProtection);
         document.getElementById('top-bar').addEventListener('mouseleave', startProtection);
 
+        document.addEventListener('keydown', function(e) {
+            if (e.ctrlKey && e.key === 'p') {
+                e.preventDefault();
+            }
+            if (e.key === 'PrintScreen') {
+                e.preventDefault();
+            }
+            startProtection();
+        });
+
+        document.addEventListener('keyup', stopProtection);
+
+        document.addEventListener('contextmenu', function(e) {
+            e.preventDefault();
+        });
+
+        window.addEventListener('resize', function() {
+            if (currentPdf) {
+                renderPage(currentPage);
+            }
+        });
+
+        window.addEventListener('blur', startProtection);
+        window.addEventListener('focus', stopProtection);
+
         async function loadPDFFromGoogleDrive(fileId) {
             try {
                 const response = await fetch(`https://www.googleapis.com/drive/v3/files/${fileId}?alt=media&key=${API_KEY}`);
@@ -402,7 +427,6 @@
                 await loadPDFFromGoogleDrive(fileId);
                 startProtection(); // Ensure protection starts immediately when the PDF is loaded from a shareable link
                 disableControls(); // Disable upload and generate link buttons
-                activateKeyboardBlocking(); // Activate keyboard blocking immediately
             }
         }
 
@@ -412,34 +436,9 @@
             generateLinkButton.disabled = true;
         }
 
-        function activateKeyboardBlocking() {
-            document.addEventListener('keydown', handleKeyDown);
-            document.addEventListener('keyup', handleKeyUp);
-            window.addEventListener('blur', startProtection);
-            window.addEventListener('focus', stopProtection);
-        }
-
-        function handleKeyDown(e) {
-            if (e.ctrlKey && e.key === 'p') {
-                e.preventDefault();
-            }
-            if (e.key === 'PrintScreen') {
-                e.preventDefault();
-            }
-            startProtection();
-        }
-
-        function handleKeyUp() {
-            stopProtection();
-        }
-
-        // Activate protection and keyboard blocking on page load
-        document.addEventListener('DOMContentLoaded', function() {
-            startProtection();
-            activateKeyboardBlocking();
-        });
-
         startProtection();
     </script>
     <script async defer src="https://apis.google.com/js/api.js" onload="gapiLoaded()"></script>
-    <script async defer
+    <script async defer src="https://accounts.google.com/gsi/client" onload="gisLoaded()"></script>
+</body>
+</html>
