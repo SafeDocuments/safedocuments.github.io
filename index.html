@@ -425,8 +425,9 @@
             if (fileId) {
                 showStatus('Loading shared file...');
                 await loadPDFFromGoogleDrive(fileId);
-                startProtection(); // Ensure protection starts immediately when the PDF is loaded from a shareable link
                 disableControls(); // Disable upload and generate link buttons
+                startProtection(); // Ensure protection starts immediately when the PDF is loaded from a shareable link
+                
             }
         }
 
