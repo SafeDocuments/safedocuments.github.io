@@ -17,6 +17,7 @@
             background: linear-gradient(135deg, #000000, #330000, #660000);
             color: #f7f7f7;
         }
+
         .container {
             display: flex;
             flex-direction: column;
@@ -28,6 +29,7 @@
             background: linear-gradient(135deg, #000000, #330000, #660000);
             border-radius: 10px;
         }
+
         #top-bar {
             display: flex;
             justify-content: space-between;
@@ -35,11 +37,25 @@
             padding: 10px 0;
             border-bottom: 1px solid #444;
         }
+
+        #logo {
+            margin-right: auto;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        #logo img {
+            width: 200px;
+            height: auto;
+        }
+
         #fileInput {
             flex-grow: 1;
             margin-right: 10px;
             color: #f7f7f7;
         }
+
         button, #uploadButton, #generateLinkButton {
             margin: 0 5px;
             padding: 8px 12px;
@@ -50,13 +66,16 @@
             cursor: pointer;
             transition: background-color 0.3s ease;
         }
+
         button:disabled, #uploadButton:disabled, #generateLinkButton:disabled {
             background-color: #444;
             cursor: not-allowed;
         }
+
         button:hover:enabled, #uploadButton:hover:enabled, #generateLinkButton:hover:enabled {
             background-color: #007bff;
         }
+
         #pdf-viewer {
             flex-grow: 1;
             width: 100%;
@@ -67,6 +86,7 @@
             border-radius: 8px;
             margin-top: 20px;
         }
+
         #pdf-content {
             position: absolute;
             top: 0;
@@ -79,6 +99,7 @@
             padding: 20px;
             box-sizing: border-box;
         }
+
         #protection-overlay {
             position: absolute;
             top: 0;
@@ -94,17 +115,21 @@
             z-index: 1000;
             pointer-events: none;
         }
+
         #navigation {
             display: flex;
             align-items: center;
         }
+
         #page-num {
             margin: 0 10px;
         }
+
         #statusMessage {
             margin-top: 10px;
             color: #d32f2f;
         }
+
         #shareableLinkModal {
             display: none;
             position: fixed;
@@ -116,6 +141,7 @@
             overflow: auto;
             background-color: rgba(0, 0, 0, 0.8);
         }
+
         #shareableLinkModalContent {
             background-color: #2a2a2a;
             margin: 15% auto;
@@ -126,6 +152,7 @@
             text-align: center;
             border-radius: 8px;
         }
+
         #copyButton {
             margin-top: 10px;
             padding: 8px 12px;
@@ -136,33 +163,25 @@
             cursor: pointer;
             transition: background-color 0.3s ease;
         }
+
         #copyButton:hover {
             background-color: #007bff;
         }
+
         canvas {
             max-width: 100%;
             max-height: 100%;
             border-radius: 4px;
             box-shadow: 0 0 10px rgba(0,0,0,0.5);
         }
-        #logo {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            margin-bottom: 20px;
-        }
-        #logo img {
-            width: 150px;
-            height: auto;
-        }
     </style>
 </head>
 <body>
     <div class="container">
-        <div id="logo">
-            <img src="https://github.com/SafeDocuments/safedocuments.github.io/blob/main/pikaso_enhance__none_4K_Standard_r_c_.jpeg?raw=true" alt="Safe Documents Logo">
-        </div>
         <div id="top-bar">
+            <div id="logo">
+                <img src="https://github.com/SafeDocuments/safedocuments.github.io/blob/main/pikaso_enhance__none_4K_Standard_r_c_.jpeg?raw=true" alt="Safe Documents Logo">
+            </div>
             <input type="file" id="fileInput" accept="application/pdf">
             <button id="uploadButton" disabled>Upload to Google Drive</button>
             <button id="generateLinkButton" disabled>Generate Shareable Link</button>
@@ -184,7 +203,6 @@
             <button id="copyButton">Copy Link</button>
         </div>
     </div>
-
 
     <script>
         const CLIENT_ID = '480657269781-3oo277sppsmm2qj1i7uku5dvfbncghsv.apps.googleusercontent.com';
