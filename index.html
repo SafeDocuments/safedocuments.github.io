@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>vfgolden33</title>
+    <title>vfgolden3zz</title>
     <script src="https://apis.google.com/js/api.js"></script>
     <script src="https://accounts.google.com/gsi/client"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.9.359/pdf.min.js"></script>
@@ -48,7 +48,7 @@
             left: 0;
             width: 100%;
             height: 100%;
-            background-color: rgba(0, 0, 0, 1);
+            background-color: rgba(0, 0, 0, 0.7);
             display: flex;
             justify-content: center;
             align-items: center;
@@ -363,11 +363,11 @@
             }
         });
 
-        function startProtection() {console.log("startProtection");
+        function startProtection() {
             protectionOverlay.style.display = 'flex';
         }
 
-        function stopProtection() {console.log("stopProtection");
+        function stopProtection() {
             protectionOverlay.style.display = 'none';
         }
 
@@ -377,7 +377,7 @@
         document.getElementById('top-bar').addEventListener('mouseover', stopProtection);
         document.getElementById('top-bar').addEventListener('mouseleave', startProtection);
 
-        document.addEventListener('keydown', function(e) {console.log("addEventListener");
+        document.addEventListener('keydown', function(e) {
             if (e.ctrlKey && e.key === 'p') {
                 e.preventDefault();
             }
@@ -425,9 +425,8 @@
             if (fileId) {
                 showStatus('Loading shared file...');
                 await loadPDFFromGoogleDrive(fileId);
-                disableControls(); // Disable upload and generate link buttons
                 startProtection(); // Ensure protection starts immediately when the PDF is loaded from a shareable link
-                
+                disableControls(); // Disable upload and generate link buttons
             }
         }
 
