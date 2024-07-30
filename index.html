@@ -3,92 +3,178 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PDF Upload and Embed</title>
+    <title>PDF Upload and Google Drive Viewer</title>
+    <script src="https://apis.google.com/js/api.js"></script>
+    <script src="https://accounts.google.com/gsi/client"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        #fileInput, #uploadButton, #generateLinkButton {
+            margin: 10px 0;
+            padding: 10px;
+            font-size: 16px;
+        }
+        #viewArea {
+            width: 100%;
+            height: 600px;
+            border: 1px solid #ccc;
+            margin-top: 20px;
+        }
+        #shareableLink, #statusMessage {
+            margin-top: 20px;
+            word-break: break-all;
+        }
+        #statusMessage {
+            color: #d32f2f;
+        }
+    </style>
 </head>
 <body>
-    <h1>Upload a PDF to Google Drive</h1>
     <input type="file" id="fileInput" accept="application/pdf">
-    <button onclick="uploadFile()">Upload</button>
-    <div id="pdfViewer" style="margin-top: 20px;">
-        <!-- The embedded PDF will appear here -->
-    </div>
+    <button id="uploadButton" disabled>Upload to Google Drive</button>
+    <button id="generateLinkButton" disabled>Generate Shareable Link</button>
+    <div id="viewArea"></div>
+    <div id="shareableLink"></div>
+    <div id="statusMessage"></div>
 
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/google-api-javascript-client/1.1.0/gapi.js"></script>
     <script>
-        // WARNING: This is for demonstration purposes only.
-        // In a real application, never expose your client ID or client secret on the client side.
         const CLIENT_ID = '480657269781-3oo277sppsmm2qj1i7uku5dvfbncghsv.apps.googleusercontent.com';
-        const API_KEY = 'YOUR_API_KEY'; // You need to add your API key here
-        const FOLDER_ID = '1w17OEokh0z5o6MzXWjOYVUYITkW77Fnh';
+        const API_KEY = 'YOUR_API_KEY'; // TODO: Replace with your actual API Key
+        const DISCOVERY_DOC = 'https://www.googleapis.com/discovery/v1/apis/drive/v3/rest';
         const SCOPES = 'https://www.googleapis.com/auth/drive.file';
+        const FOLDER_ID = 'YOUR_FOLDER_ID'; // TODO: Replace with your Google Drive folder ID
 
-        function initClient() {
-            gapi.client.init({
-                apiKey: API_KEY,
-                clientId: CLIENT_ID,
-                scope: SCOPES
-            }).then(function () {
-                // Listen for sign-in state changes.
-                gapi.auth2.getAuthInstance().isSignedIn.listen(updateSigninStatus);
-                // Handle the initial sign-in state.
-                updateSigninStatus(gapi.auth2.getAuthInstance().isSignedIn.get());
-            });
+        let tokenClient;
+        let gapiInited = false;
+        let gisInited = false;
+
+        const uploadButton = document.getElementById('uploadButton');
+        const generateLinkButton = document.getElementById('generateLinkButton');
+        const fileInput = document.getElementById('fileInput');
+        const viewArea = document.getElementById('viewArea');
+        const shareableLinkDiv = document.getElementById('shareableLink');
+        const statusMessageDiv = document.getElementById('statusMessage');
+
+        function gapiLoaded() {
+            gapi.load('client', initializeGapiClient);
         }
 
-        function updateSigninStatus(isSignedIn) {
-            if (!isSignedIn) {
-                gapi.auth2.getAuthInstance().signIn();
+        async function initializeGapiClient() {
+            try {
+                await gapi.client.init({
+                    apiKey: API_KEY,
+                    discoveryDocs: [DISCOVERY_DOC],
+                });
+                gapiInited = true;
+                maybeEnableButtons();
+            } catch (err) {
+                showStatus('Error initializing GAPI client: ' + err.message);
             }
         }
 
-        function handleClientLoad() {
-            gapi.load('client:auth2', initClient);
+        function gisLoaded() {
+            tokenClient = google.accounts.oauth2.initTokenClient({
+                client_id: CLIENT_ID,
+                scope: SCOPES,
+                callback: '', // defined later
+            });
+            gisInited = true;
+            maybeEnableButtons();
+        }
+
+        function maybeEnableButtons() {
+            if (gapiInited && gisInited) {
+                uploadButton.disabled = false;
+            }
+        }
+
+        uploadButton.addEventListener('click', handleAuthClick);
+        generateLinkButton.addEventListener('click', generateShareableLink);
+        fileInput.addEventListener('change', () => uploadButton.disabled = false);
+
+        function handleAuthClick() {
+            tokenClient.callback = async (resp) => {
+                if (resp.error !== undefined) {
+                    showStatus('Error during authentication: ' + resp.error);
+                    return;
+                }
+                await uploadFile();
+            };
+
+            if (gapi.client.getToken() === null) {
+                tokenClient.requestAccessToken({prompt: 'consent'});
+            } else {
+                tokenClient.requestAccessToken({prompt: ''});
+            }
         }
 
         async function uploadFile() {
-            const fileInput = document.getElementById('fileInput');
-            if (fileInput.files.length === 0) {
-                alert('Please select a file.');
+            const file = fileInput.files[0];
+            if (!file) {
+                showStatus('Please select a PDF file first.');
                 return;
             }
 
-            const file = fileInput.files[0];
             const metadata = {
                 'name': file.name,
-                'mimeType': 'application/pdf',
+                'mimeType': file.type,
                 'parents': [FOLDER_ID]
             };
 
-            const accessToken = gapi.auth.getToken().access_token;
             const form = new FormData();
-            form.append('metadata', new Blob([JSON.stringify(metadata)], { type: 'application/json' }));
+            form.append('metadata', new Blob([JSON.stringify(metadata)], {type: 'application/json'}));
             form.append('file', file);
 
             try {
-                const response = await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart', {
-                    method: 'POST',
-                    headers: new Headers({ 'Authorization': 'Bearer ' + accessToken }),
-                    body: form
+                showStatus('Uploading file...');
+                const response = await gapi.client.request({
+                    'path': 'https://www.googleapis.com/upload/drive/v3/files',
+                    'method': 'POST',
+                    'params': {'uploadType': 'multipart'},
+                    'headers': {
+                        'Content-Type': 'multipart/related; boundary=foo_bar_baz'
+                    },
+                    'body': form
                 });
 
-                const data = await response.json();
-                if (response.ok) {
-                    displayPDF(data.id);
-                } else {
-                    alert('Upload failed.');
-                }
-            } catch (error) {
-                console.error('Error uploading file:', error);
-                alert('An error occurred. Please try again.');
+                showStatus('File uploaded successfully!');
+                generateLinkButton.disabled = false;
+                displayFile(response.result.id);
+            } catch (err) {
+                showStatus('Error uploading file: ' + err.message);
             }
         }
 
-        function displayPDF(fileId) {
-            const pdfViewer = document.getElementById('pdfViewer');
-            const embed = `<embed src="https://drive.google.com/file/d/${fileId}/preview" type="application/pdf" width="600" height="500">`;
-            pdfViewer.innerHTML = embed;
+        function displayFile(fileId) {
+            viewArea.innerHTML = `<iframe src="https://drive.google.com/file/d/${fileId}/preview" width="100%" height="100%"></iframe>`;
+        }
+
+        function generateShareableLink() {
+            const currentUrl = window.location.href.split('?')[0];
+            const fileId = viewArea.querySelector('iframe').src.split('/')[5];
+            const shareableLink = `${currentUrl}?fileId=${fileId}`;
+            shareableLinkDiv.textContent = `Shareable Link: ${shareableLink}`;
+        }
+
+        function showStatus(message) {
+            statusMessageDiv.textContent = message;
+        }
+
+        // Check if there's a fileId in the URL parameters
+        const urlParams = new URLSearchParams(window.location.search);
+        const fileId = urlParams.get('fileId');
+        if (fileId) {
+            displayFile(fileId);
+            generateLinkButton.disabled = false;
         }
     </script>
-    <script async defer src="https://apis.google.com/js/api.js" onload="handleClientLoad()"></script>
+    <script async defer src="https://apis.google.com/js/api.js" onload="gapiLoaded()"></script>
+    <script async defer src="https://accounts.google.com/gsi/client" onload="gisLoaded()"></script>
 </body>
 </html>
