@@ -30,7 +30,6 @@
             height: 600px;
             border: 1px solid #ccc;
             margin-top: 20px;
-            position: relative;
         }
         #shareableLink, #statusMessage, #debugMessage {
             margin-top: 20px;
@@ -109,9 +108,7 @@
         <input type="file" id="fileInput" accept="application/pdf">
         <button id="uploadButton" disabled>Upload to Google Drive</button>
         <button id="generateLinkButton" disabled>Generate Shareable Link</button>
-        <div id="viewArea">
-            <div id="protection-overlay">PROTECTED CONTENT</div>
-        </div>
+        <div id="viewArea"></div>
         <div id="shareableLink"></div>
         <div id="statusMessage"></div>
         <div id="debugMessage"></div>
@@ -128,6 +125,7 @@
         </div>
         <div id="pdf-viewer">
             <div id="pdf-content"></div>
+            <div id="protection-overlay">PROTECTED CONTENT</div>
         </div>
     </div>
 
