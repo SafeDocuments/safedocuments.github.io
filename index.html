@@ -1,9 +1,9 @@
-     <!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Protected PDF Viewer with Google Drive Integration</title>
+    <title>Praaaaotected PDF Viewer with Google Drive Integration</title>
     <script src="https://apis.google.com/js/api.js"></script>
     <script src="https://accounts.google.com/gsi/client"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.9.359/pdf.min.js"></script>
@@ -107,7 +107,6 @@
     <div id="debugMessage"></div>
 
     <script>
-        // Replace these with your own Google API credentials
         const CLIENT_ID = '480657269781-3oo277sppsmm2qj1i7uku5dvfbncghsv.apps.googleusercontent.com';
         const API_KEY = 'AIzaSyCawbOm-B5FGvuFNszpZrrpkpOYugaGHE8';
         const DISCOVERY_DOC = 'https://www.googleapis.com/discovery/v1/apis/drive/v3/rest';
@@ -148,6 +147,7 @@
                 });
                 gapiInited = true;
                 maybeEnableButtons();
+                checkFileIdInURL();
             } catch (err) {
                 showError('Error initializing GAPI client', err);
             }
@@ -377,16 +377,35 @@
         window.addEventListener('blur', startProtection);
         window.addEventListener('focus', stopProtection);
 
-        // Check if there's a fileId in the URL parameters
-        const urlParams = new URLSearchParams(window.location.search);
-        const fileId = urlParams.get('fileId');
-        if (fileId) {
-            // TODO: Implement loading the file from Google Drive using the fileId
-            // This would require additional Google Drive API calls
-            showStatus('Loading shared file...');
+        async function loadPDFFromGoogleDrive(fileId) {
+            try {
+                const accessToken = gapi.auth.getToken().access_token;
+                const response = await fetch(`https://www.googleapis.com/drive/v3/files/${fileId}?alt=media`, {
+                    headers: new Headers({ 'Authorization': 'Bearer ' + accessToken })
+                });
+
+                if (!response.ok) {
+                    throw new Error('Failed to fetch file from Google Drive');
+                }
+
+                const blob = await response.blob();
+                const arrayBuffer = await blob.arrayBuffer();
+                const typedarray = new Uint8Array(arrayBuffer);
+                pdfjsLib.getDocument(typedarray).promise.then(loadPDF);
+            } catch (error) {
+                showError('Error loading PDF from Google Drive', error);
+            }
         }
 
-        // Initial state: protection on
+        async function checkFileIdInURL() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const fileId = urlParams.get('fileId');
+            if (fileId) {
+                showStatus('Loading shared file...');
+                await loadPDFFromGoogleDrive(fileId);
+            }
+        }
+
         startProtection();
     </script>
     <script async defer src="https://apis.google.com/js/api.js" onload="gapiLoaded()"></script>
