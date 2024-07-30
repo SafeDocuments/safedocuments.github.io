@@ -448,10 +448,14 @@
             if (e.key === 'Enter') {
                 e.preventDefault();
             }
-            startProtection();
+            startProtection(); // Trigger protection immediately
         });
 
-        document.addEventListener('keyup', stopProtection);
+        document.addEventListener('keyup', function(e) {
+            if (e.key === 'Enter') {
+                startProtection(); // Ensure protection is active
+            }
+        });
 
         document.addEventListener('contextmenu', function(e) {
             e.preventDefault();
