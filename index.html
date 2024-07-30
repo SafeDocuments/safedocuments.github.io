@@ -74,6 +74,10 @@
             max-width: 100%;
             max-height: 100%;
         }
+        #sharable-link {
+            display: none;
+            margin-top: 10px;
+        }
     </style>
 </head>
 <body>
@@ -91,6 +95,9 @@
             <div id="pdf-content"></div>
             <div id="protection-overlay">PROTECTED CONTENT</div>
         </div>
+        <div id="sharable-link">
+            Sharable link: <a href="#" id="link" target="_blank">View PDF</a>
+        </div>
     </div>
 
     <script>
@@ -103,6 +110,8 @@
         const nextButton = document.getElementById('next');
         const pageNum = document.getElementById('page-num');
         const topBar = document.getElementById('top-bar');
+        const sharableLink = document.getElementById('sharable-link');
+        const link = document.getElementById('link');
 
         let currentPdf = null;
         let currentPage = 1;
@@ -164,6 +173,9 @@
                 pdfjsLib.getDocument(typedarray).promise.then(loadPDF);
             };
             fileReader.readAsArrayBuffer(file);
+
+            // Upload to Google Drive and get sharable link
+            uploadToGoogleDrive(file);
         });
 
         prevButton.addEventListener('click', function() {
@@ -232,44 +244,60 @@
         // Initial state: protection on
         startProtection();
 
-        // Google Drive integration
-        const urlParams = new URLSearchParams(window.location.search);
-        const fileId = urlParams.get('fileId');
+        function uploadToGoogleDrive(file) {
+        const CLIENT_ID = '480657269781-3oo277sppsmm2qj1i7uku5dvfbncghsv.apps.googleusercontent.com';
+        const API_KEY = 'AIzaSyCawbOm-B5FGvuFNszpZrrpkpOYugaGHE8';
+        const DISCOVERY_DOC = 'https://www.googleapis.com/discovery/v1/apis/drive/v3/rest';
+        const SCOPES = 'https://www.googleapis.com/auth/drive.file';
 
-        if (fileId) {
-            loadPdfFromGoogleDrive(fileId);
-        }
-
-        function loadPdfFromGoogleDrive(fileId) {
-            const accessToken = 'YOUR_ACCESS_TOKEN'; // Replace with your Google API access token
-
-            fetch(`https://www.googleapis.com/drive/v3/files/${fileId}?alt=media`, {
-                headers: new Headers({ 'Authorization': 'Bearer ' + accessToken })
-            })
-            .then(response => response.blob())
-            .then(blob => {
-                const fileReader = new FileReader();
-                fileReader.onload = function() {
-                    const typedarray = new Uint8Array(this.result);
-                    pdfjsLib.getDocument(typedarray).promise.then(loadPDF);
-                };
-                fileReader.readAsArrayBuffer(blob);
-            })
-            .catch(error => {
-                console.error('Error loading PDF from Google Drive:', error);
-                errorMessage.textContent = 'Error loading PDF from Google Drive.';
+            gapi.load('client:auth2', () => {
+                gapi.client.init({
+                    apiKey: API_KEY,
+                    clientId: CLIENT_ID,
+                    discoveryDocs: DISCOVERY_DOCS,
+                    scope: SCOPES,
+                }).then(() => {
+                    gapi.auth2.getAuthInstance().signIn().then(() => {
+                        const fileMetadata = {
+                            name: file.name,
+                            mimeType: 'application/pdf'
+                        };
+                        const media = {
+                            mimeType: 'application/pdf',
+                            body: file
+                        };
+                        gapi.client.drive.files.create({
+                            resource: fileMetadata,
+                            media: media,
+                            fields: 'id'
+                        }).then((response) => {
+                            const fileId = response.result.id;
+                            generateSharableLink(fileId);
+                        });
+                    });
+                });
             });
         }
 
-        function generateShareableLink(fileId) {
-            const baseUrl = window.location.origin + window.location.pathname;
-            return `${baseUrl}?fileId=${fileId}`;
+        function generateSharableLink(fileId) {
+            gapi.client.drive.permissions.create({
+                fileId: fileId,
+                resource: {
+                    role: 'reader',
+                    type: 'anyone'
+                }
+            }).then(() => {
+                gapi.client.drive.files.get({
+                    fileId: fileId,
+                    fields: 'webViewLink'
+                }).then((response) => {
+                    const webViewLink = response.result.webViewLink;
+                    link.href = webViewLink;
+                    sharableLink.style.display = 'block';
+                });
+            });
         }
-
-        // Example usage:
-        // const shareableLink = generateShareableLink('your-google-drive-file-id');
-        // console.log('Shareable Link:', shareableLink);
-
     </script>
+    <script src="https://apis.google.com/js/api.js"></script>
 </body>
 </html>
