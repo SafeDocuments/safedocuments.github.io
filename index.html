@@ -145,7 +145,7 @@
         }
 
         function updatePageNum() {
-            pageNum.textContent = Page ${currentPage} of ${totalPages};
+            pageNum.textContent = `Page ${currentPage} of ${totalPages}`;
             prevButton.disabled = currentPage === 1;
             nextButton.disabled = currentPage === totalPages;
         }
@@ -187,50 +187,4 @@
         }
 
         function stopProtection() {
-            protectionOverlay.style.display = 'none';
-        }
-
-        pdfContent.addEventListener('mousemove', startProtection);
-        pdfContent.addEventListener('mouseleave', stopProtection);
-
-        topBar.addEventListener('mouseover', stopProtection);
-        topBar.addEventListener('mouseleave', startProtection);
-
-        document.addEventListener('keydown', function(e) {
-            if (e.key === 'Meta' || e.key === 'Windows') {
-                isWindowsKeyPressed = true;
-            }
-            if (e.ctrlKey && e.key === 'p') {
-                e.preventDefault();
-            }
-            if (isWindowsKeyPressed && e.key === 'PrintScreen') {
-                e.preventDefault();
-            }
-            startProtection();
-        });
-
-        document.addEventListener('keyup', function(e) {
-            if (e.key === 'Meta' || e.key === 'Windows') {
-                isWindowsKeyPressed = false;
-            }
-            stopProtection();
-        });
-
-        document.addEventListener('contextmenu', function(e) {
-            e.preventDefault();
-        });
-
-        window.addEventListener('resize', function() {
-            if (currentPdf) {
-                renderPage(currentPage);
-            }
-        });
-
-        window.addEventListener('blur', startProtection);
-        window.addEventListener('focus', stopProtection);
-
-        // Initial state: protection on
-        startProtection();
-    </script>
-</body>
-</html>
+     
