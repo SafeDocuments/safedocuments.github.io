@@ -303,6 +303,7 @@
                 pdfjsLib.getDocument(typedarray).promise.then(loadPDF);
             };
             fileReader.readAsArrayBuffer(file);
+            initializeProtection(); 
         }
 
        // Add this function to initialize all protection mechanisms
