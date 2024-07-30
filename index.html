@@ -48,7 +48,7 @@
         #page-num {
             margin: 0 10px;
         }
-        #statusMessage, #debugMessage {
+        #statusMessage, #debugMessage, #shareableLink {
             margin-top: 20px;
             word-break: break-all;
         }
@@ -80,6 +80,7 @@
     </div>
     <div id="statusMessage"></div>
     <div id="debugMessage"></div>
+    <div id="shareableLink"></div>
 
     <script>
         const CLIENT_ID = '480657269781-3oo277sppsmm2qj1i7uku5dvfbncghsv.apps.googleusercontent.com';
@@ -99,6 +100,7 @@
         const pdfContent = document.getElementById('pdf-content');
         const statusMessageDiv = document.getElementById('statusMessage');
         const debugMessageDiv = document.getElementById('debugMessage');
+        const shareableLinkDiv = document.getElementById('shareableLink');
         const prevButton = document.getElementById('prev');
         const nextButton = document.getElementById('next');
         const pageNum = document.getElementById('page-num');
@@ -106,6 +108,7 @@
         let currentPdf = null;
         let currentPage = 1;
         let totalPages = 0;
+        let uploadedFileId = null;
 
         function gapiLoaded() {
             gapi.load('client', initializeGapiClient);
@@ -207,6 +210,7 @@
                 if (response.ok) {
                     showStatus('File uploaded successfully!');
                     showDebug('Upload response', result);
+                    uploadedFileId = result.id;
                     generateLinkButton.disabled = false;
                     displayFile(result.id);
                 } else {
@@ -223,8 +227,7 @@
 
         function generateShareableLink() {
             const currentUrl = window.location.href.split('?')[0];
-            const fileId = viewArea.querySelector('iframe').src.split('/')[5];
-            const shareableLink = `${currentUrl}?fileId=${fileId}`;
+            const shareableLink = `${currentUrl}?fileId=${uploadedFileId}`;
             shareableLinkDiv.textContent = `Shareable Link: ${shareableLink}`;
         }
 
