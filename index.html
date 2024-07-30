@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>11vfgolden</title>
+    <title>vfgolden</title>
     <script src="https://apis.google.com/js/api.js"></script>
     <script src="https://accounts.google.com/gsi/client"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.9.359/pdf.min.js"></script>
@@ -364,14 +364,17 @@
         });
 
         function startProtection() {
+            console.log('Start protection');
             protectionOverlay.style.display = 'flex';
         }
 
         function stopProtection() {
+            console.log('Stop protection');
             protectionOverlay.style.display = 'none';
         }
 
         function setupProtectionListeners() {
+            console.log('Setting up protection listeners');
             pdfContent.addEventListener('mousemove', startProtection);
             pdfContent.addEventListener('mouseleave', stopProtection);
 
@@ -381,9 +384,11 @@
             document.addEventListener('keydown', function(e) {
                 if (e.ctrlKey && e.key === 'p') {
                     e.preventDefault();
+                    console.log('Blocked print');
                 }
                 if (e.key === 'PrintScreen') {
                     e.preventDefault();
+                    console.log('Blocked screenshot');
                 }
                 startProtection();
             });
@@ -392,6 +397,7 @@
 
             document.addEventListener('contextmenu', function(e) {
                 e.preventDefault();
+                console.log('Blocked context menu');
             });
 
             window.addEventListener('resize', function() {
@@ -439,6 +445,7 @@
         }
 
         document.addEventListener('DOMContentLoaded', function() {
+            console.log('DOMContentLoaded');
             setupProtectionListeners();
             startProtection();
 
