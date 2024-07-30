@@ -363,11 +363,11 @@
             }
         });
 
-        function startProtection() {
+        function startProtection() {console.log("startProtection");
             protectionOverlay.style.display = 'flex';
         }
 
-        function stopProtection() {
+        function stopProtection() {console.log("stopProtection");
             protectionOverlay.style.display = 'none';
         }
 
@@ -377,7 +377,7 @@
         document.getElementById('top-bar').addEventListener('mouseover', stopProtection);
         document.getElementById('top-bar').addEventListener('mouseleave', startProtection);
 
-        document.addEventListener('keydown', function(e) {
+        document.addEventListener('keydown', function(e) {console.log("addEventListener");
             if (e.ctrlKey && e.key === 'p') {
                 e.preventDefault();
             }
