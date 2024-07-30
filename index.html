@@ -3,7 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PDF Upload and Custom Viewer</title>
+    <title>PDF Upload and Canvas Viewer</title>
+    <script src="https://apis.google.com/js/api.js"></script>
+    <script src="https://accounts.google.com/gsi/client"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.9.359/pdf.min.js"></script>
     <style>
         body {
@@ -26,15 +28,17 @@
             margin-top: 20px;
             position: relative;
         }
-        #pdf-content {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            display: flex;
-            justify-content: center;
-            align-items: center;
+        #shareableLink, #statusMessage, #debugMessage {
+            margin-top: 20px;
+            word-break: break-all;
+        }
+        #statusMessage {
+            color: #d32f2f;
+        }
+        #debugMessage {
+            color: #1565c0;
+            font-family: monospace;
+            white-space: pre-wrap;
         }
         #navigation {
             display: flex;
@@ -48,17 +52,12 @@
         #page-num {
             margin: 0 10px;
         }
-        #statusMessage, #debugMessage, #shareableLink {
-            margin-top: 20px;
-            word-break: break-all;
-        }
-        #statusMessage {
-            color: #d32f2f;
-        }
-        #debugMessage {
-            color: #1565c0;
-            font-family: monospace;
-            white-space: pre-wrap;
+        #pdf-content {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
         }
         canvas {
             max-width: 100%;
@@ -70,17 +69,17 @@
     <input type="file" id="fileInput" accept="application/pdf">
     <button id="uploadButton" disabled>Upload to Google Drive</button>
     <button id="generateLinkButton" disabled>Generate Shareable Link</button>
+    <div id="navigation">
+        <button id="prev">Previous</button>
+        <span id="page-num"></span>
+        <button id="next">Next</button>
+    </div>
     <div id="viewArea">
         <div id="pdf-content"></div>
     </div>
-    <div id="navigation">
-        <button id="prev" disabled>Previous</button>
-        <span id="page-num"></span>
-        <button id="next" disabled>Next</button>
-    </div>
+    <div id="shareableLink"></div>
     <div id="statusMessage"></div>
     <div id="debugMessage"></div>
-    <div id="shareableLink"></div>
 
     <script>
         const CLIENT_ID = '480657269781-3oo277sppsmm2qj1i7uku5dvfbncghsv.apps.googleusercontent.com';
@@ -98,9 +97,9 @@
         const fileInput = document.getElementById('fileInput');
         const viewArea = document.getElementById('viewArea');
         const pdfContent = document.getElementById('pdf-content');
+        const shareableLinkDiv = document.getElementById('shareableLink');
         const statusMessageDiv = document.getElementById('statusMessage');
         const debugMessageDiv = document.getElementById('debugMessage');
-        const shareableLinkDiv = document.getElementById('shareableLink');
         const prevButton = document.getElementById('prev');
         const nextButton = document.getElementById('next');
         const pageNum = document.getElementById('page-num');
@@ -108,7 +107,6 @@
         let currentPdf = null;
         let currentPage = 1;
         let totalPages = 0;
-        let uploadedFileId = null;
 
         function gapiLoaded() {
             gapi.load('client', initializeGapiClient);
@@ -145,15 +143,10 @@
 
         uploadButton.addEventListener('click', handleAuthClick);
         generateLinkButton.addEventListener('click', generateShareableLink);
-        fileInput.addEventListener('change', handleFileSelect);
-
-        function handleFileSelect(event) {
-            const file = event.target.files[0];
-            if (file) {
-                uploadButton.disabled = false;
-                renderPDF(file);
-            }
-        }
+        fileInput.addEventListener('change', () => {
+            uploadButton.disabled = false;
+            handleFileSelect();
+        });
 
         function handleAuthClick() {
             tokenClient.callback = async (resp) => {
@@ -210,9 +203,7 @@
                 if (response.ok) {
                     showStatus('File uploaded successfully!');
                     showDebug('Upload response', result);
-                    uploadedFileId = result.id;
                     generateLinkButton.disabled = false;
-                    displayFile(result.id);
                 } else {
                     throw new Error(result.error.message);
                 }
@@ -221,35 +212,32 @@
             }
         }
 
-        function displayFile(fileId) {
-            renderPDF(fileInput.files[0]);
-        }
+        function handleFileSelect() {
+            const file = fileInput.files[0];
+            if (file.type !== 'application/pdf') {
+                showStatus('Please select a PDF file.');
+                return;
+            }
 
-        function generateShareableLink() {
-            const currentUrl = window.location.href.split('?')[0];
-            const shareableLink = `${currentUrl}?fileId=${uploadedFileId}`;
-            shareableLinkDiv.textContent = `Shareable Link: ${shareableLink}`;
-        }
-
-        function renderPDF(file) {
             const fileReader = new FileReader();
-
-            fileReader.onload = function () {
+            fileReader.onload = function() {
                 const typedarray = new Uint8Array(this.result);
 
-                pdfjsLib.getDocument(typedarray).promise.then(function (pdf) {
-                    currentPdf = pdf;
-                    totalPages = pdf.numPages;
-                    currentPage = 1;
-                    renderPage(currentPage);
-                    updatePageNum();
-                });
+                pdfjsLib.getDocument(typedarray).promise.then(loadPDF);
             };
             fileReader.readAsArrayBuffer(file);
         }
 
+        function loadPDF(pdf) {
+            currentPdf = pdf;
+            totalPages = pdf.numPages;
+            currentPage = 1;
+            renderPage(currentPage);
+            updatePageNum();
+        }
+
         function renderPage(pageNumber) {
-            currentPdf.getPage(pageNumber).then(function (page) {
+            currentPdf.getPage(pageNumber).then(function(page) {
                 const viewport = page.getViewport({ scale: 1 });
                 const canvas = document.createElement('canvas');
                 const context = canvas.getContext('2d');
@@ -281,7 +269,7 @@
             nextButton.disabled = currentPage === totalPages;
         }
 
-        prevButton.addEventListener('click', function () {
+        prevButton.addEventListener('click', function() {
             if (currentPage > 1) {
                 currentPage--;
                 renderPage(currentPage);
@@ -289,13 +277,20 @@
             }
         });
 
-        nextButton.addEventListener('click', function () {
+        nextButton.addEventListener('click', function() {
             if (currentPage < totalPages) {
                 currentPage++;
                 renderPage(currentPage);
                 updatePageNum();
             }
         });
+
+        function generateShareableLink() {
+            const currentUrl = window.location.href.split('?')[0];
+            const file = fileInput.files[0];
+            const shareableLink = `${currentUrl}?fileName=${encodeURIComponent(file.name)}`;
+            shareableLinkDiv.textContent = `Shareable Link: ${shareableLink}`;
+        }
 
         function showStatus(message) {
             statusMessageDiv.textContent = message;
@@ -312,18 +307,17 @@
             debugMessageDiv.textContent += `\n${label}:\n${JSON.stringify(data, null, 2)}`;
         }
 
-        window.addEventListener('resize', function () {
+        window.addEventListener('resize', function() {
             if (currentPdf) {
                 renderPage(currentPage);
             }
         });
 
-        // Check if there's a fileId in the URL parameters
+        // Check if there's a fileName in the URL parameters
         const urlParams = new URLSearchParams(window.location.search);
-        const fileId = urlParams.get('fileId');
-        if (fileId) {
-            displayFile(fileId);
-            generateLinkButton.disabled = false;
+        const fileName = urlParams.get('fileName');
+        if (fileName) {
+            showStatus(`Shared file: ${fileName}`);
         }
     </script>
     <script async defer src="https://apis.google.com/js/api.js" onload="gapiLoaded()"></script>
