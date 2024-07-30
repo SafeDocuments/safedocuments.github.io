@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PDF Upload and Google Drive Viewer with Debug Messages</title>
+    <title>PDF Upload and Google Drive Viewer with Enhanced Debug</title>
     <script src="https://apis.google.com/js/api.js"></script>
     <script src="https://accounts.google.com/gsi/client"></script>
     <style>
@@ -128,11 +128,19 @@
                 return;
             }
 
+            showDebug('File details', {
+                name: file.name,
+                type: file.type,
+                size: file.size
+            });
+
             const metadata = {
                 'name': file.name,
                 'mimeType': file.type,
                 'parents': [FOLDER_ID]
             };
+
+            showDebug('Metadata', metadata);
 
             const form = new FormData();
             form.append('metadata', new Blob([JSON.stringify(metadata)], {type: 'application/json'}));
@@ -156,6 +164,9 @@
                 displayFile(response.result.id);
             } catch (err) {
                 showError('Error uploading file', err);
+                if (err.result) {
+                    showDebug('Error result', err.result);
+                }
             }
         }
 
@@ -175,12 +186,14 @@
         }
 
         function showError(message, error) {
+            console.error(message, error);
             statusMessageDiv.textContent = `${message}: ${error.message || JSON.stringify(error)}`;
             showDebug('Error details', error);
         }
 
         function showDebug(label, data) {
-            debugMessageDiv.textContent = `${label}:\n${JSON.stringify(data, null, 2)}`;
+            console.log(label, data);
+            debugMessageDiv.textContent += `\n${label}:\n${JSON.stringify(data, null, 2)}`;
         }
 
         // Check if there's a fileId in the URL parameters
