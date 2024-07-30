@@ -3,10 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>vfgolden</title>
+    <title>ssvfgolden</title>
     <script src="https://apis.google.com/js/api.js"></script>
     <script src="https://accounts.google.com/gsi/client"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.9.359/pdf.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.0.0/crypto-js.min.js"></script>
     <style>
         body, html {
             margin: 0;
@@ -133,6 +134,7 @@
         const DISCOVERY_DOC = 'https://www.googleapis.com/discovery/v1/apis/drive/v3/rest';
         const SCOPES = 'https://www.googleapis.com/auth/drive.file';
         const FOLDER_ID = '1w17OEokh0z5o6MzXWjOYVUYITkW77Fnh';
+        const ENCRYPTION_KEY = 'YourSecretKey'; // Change to your own secret key
 
         let tokenClient;
         let gapiInited = false;
@@ -257,13 +259,23 @@
             }
         }
 
+        function encrypt(text) {
+            return CryptoJS.AES.encrypt(text, ENCRYPTION_KEY).toString();
+        }
+
+        function decrypt(text) {
+            const bytes = CryptoJS.AES.decrypt(text, ENCRYPTION_KEY);
+            return bytes.toString(CryptoJS.enc.Utf8);
+        }
+
         function generateShareableLink() {
             if (!currentFileId) {
                 showStatus('No file has been uploaded yet.');
                 return;
             }
+            const encryptedFileId = encrypt(currentFileId);
             const currentUrl = window.location.href.split('?')[0];
-            const shareableLink = `${currentUrl}?fileId=${currentFileId}`;
+            const shareableLink = `${currentUrl}?fileId=${encodeURIComponent(encryptedFileId)}`;
             shareableLinkDiv.textContent = shareableLink;
             shareableLinkModal.style.display = 'block';
         }
@@ -364,51 +376,43 @@
         });
 
         function startProtection() {
-            console.log('Start protection');
             protectionOverlay.style.display = 'flex';
         }
 
         function stopProtection() {
-            console.log('Stop protection');
             protectionOverlay.style.display = 'none';
         }
 
-        function setupProtectionListeners() {
-            console.log('Setting up protection listeners');
-            pdfContent.addEventListener('mousemove', startProtection);
-            pdfContent.addEventListener('mouseleave', stopProtection);
+        pdfContent.addEventListener('mousemove', startProtection);
+        pdfContent.addEventListener('mouseleave', stopProtection);
 
-            document.getElementById('top-bar').addEventListener('mouseover', stopProtection);
-            document.getElementById('top-bar').addEventListener('mouseleave', startProtection);
+        document.getElementById('top-bar').addEventListener('mouseover', stopProtection);
+        document.getElementById('top-bar').addEventListener('mouseleave', startProtection);
 
-            document.addEventListener('keydown', function(e) {
-                if (e.ctrlKey && e.key === 'p') {
-                    e.preventDefault();
-                    console.log('Blocked print');
-                }
-                if (e.key === 'PrintScreen') {
-                    e.preventDefault();
-                    console.log('Blocked screenshot');
-                }
-                startProtection();
-            });
-
-            document.addEventListener('keyup', stopProtection);
-
-            document.addEventListener('contextmenu', function(e) {
+        document.addEventListener('keydown', function(e) {
+            if (e.ctrlKey && e.key === 'p') {
                 e.preventDefault();
-                console.log('Blocked context menu');
-            });
+            }
+            if (e.key === 'PrintScreen') {
+                e.preventDefault();
+            }
+            startProtection();
+        });
 
-            window.addEventListener('resize', function() {
-                if (currentPdf) {
-                    renderPage(currentPage);
-                }
-            });
+        document.addEventListener('keyup', stopProtection);
 
-            window.addEventListener('blur', startProtection);
-            window.addEventListener('focus', stopProtection);
-        }
+        document.addEventListener('contextmenu', function(e) {
+            e.preventDefault();
+        });
+
+        window.addEventListener('resize', function() {
+            if (currentPdf) {
+                renderPage(currentPage);
+            }
+        });
+
+        window.addEventListener('blur', startProtection);
+        window.addEventListener('focus', stopProtection);
 
         async function loadPDFFromGoogleDrive(fileId) {
             try {
@@ -429,12 +433,17 @@
 
         async function checkFileIdInURL() {
             const urlParams = new URLSearchParams(window.location.search);
-            const fileId = urlParams.get('fileId');
-            if (fileId) {
-                showStatus('Loading shared file...');
-                await loadPDFFromGoogleDrive(fileId);
-                startProtection(); // Ensure protection starts immediately when the PDF is loaded from a shareable link
-                disableControls(); // Disable upload and generate link buttons
+            const encryptedFileId = urlParams.get('fileId');
+            if (encryptedFileId) {
+                try {
+                    const fileId = decrypt(decodeURIComponent(encryptedFileId));
+                    showStatus('Loading shared file...');
+                    await loadPDFFromGoogleDrive(fileId);
+                    startProtection(); // Ensure protection starts immediately when the PDF is loaded from a shareable link
+                    disableControls(); // Disable upload and generate link buttons
+                } catch (error) {
+                    showError('Error decrypting file ID', error);
+                }
             }
         }
 
@@ -444,15 +453,12 @@
             generateLinkButton.disabled = true;
         }
 
-        document.addEventListener('DOMContentLoaded', function() {
-            console.log('DOMContentLoaded');
-            setupProtectionListeners();
-            startProtection();
+        // Start protection immediately when the page loads
+        startProtection();
 
-            // Initialize Google API and start protection immediately
-            gapiLoaded();
-            gisLoaded();
-        });
+        // Initialize Google API and start protection immediately
+        gapiLoaded();
+        gisLoaded();
     </script>
     <script async defer src="https://apis.google.com/js/api.js" onload="gapiLoaded()"></script>
     <script async defer src="https://accounts.google.com/gsi/client" onload="gisLoaded()"></script>
