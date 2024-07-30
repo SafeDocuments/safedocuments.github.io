@@ -1,9 +1,9 @@
-     <!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Protected PDF Viewer with Google Drive Integrationw</title>
+    <title>Protected PDF Viewer with Google Drive Integration</title>
     <script src="https://apis.google.com/js/api.js"></script>
     <script src="https://accounts.google.com/gsi/client"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.9.359/pdf.min.js"></script>
@@ -48,7 +48,7 @@
             left: 0;
             width: 100%;
             height: 100%;
-            background-color: rgba(0, 0, 0, 0.7);
+            background-color: rgba(0, 0, 0, 0.9); /* Increased opacity */
             display: flex;
             justify-content: center;
             align-items: center;
@@ -135,6 +135,7 @@
         let currentPage = 1;
         let totalPages = 0;
         let currentFileId = null;
+        let currentFileContent = null;
 
         function gapiLoaded() {
             gapi.load('client', initializeGapiClient);
@@ -236,6 +237,7 @@
                     showDebug('Upload response', result);
                     generateLinkButton.disabled = false;
                     currentFileId = result.id;
+                    currentFileContent = await file.arrayBuffer();
                 } else {
                     throw new Error(result.error.message);
                 }
@@ -245,12 +247,13 @@
         }
 
         function generateShareableLink() {
-            if (!currentFileId) {
+            if (!currentFileContent) {
                 showStatus('No file has been uploaded yet.');
                 return;
             }
+            const base64Content = btoa(String.fromCharCode.apply(null, new Uint8Array(currentFileContent)));
             const currentUrl = window.location.href.split('?')[0];
-            const shareableLink = `${currentUrl}?fileId=${currentFileId}`;
+            const shareableLink = `${currentUrl}?file=${encodeURIComponent(base64Content)}`;
             shareableLinkDiv.textContent = `Shareable Link: ${shareableLink}`;
         }
 
@@ -276,6 +279,7 @@
             const fileReader = new FileReader();
             fileReader.onload = function() {
                 const typedarray = new Uint8Array(this.result);
+                currentFileContent = this.result;
                 pdfjsLib.getDocument(typedarray).promise.then(loadPDF);
             };
             fileReader.readAsArrayBuffer(file);
@@ -377,13 +381,17 @@
         window.addEventListener('blur', startProtection);
         window.addEventListener('focus', stopProtection);
 
-        // Check if there's a fileId in the URL parameters
+        // Check if there's a file in the URL parameters
         const urlParams = new URLSearchParams(window.location.search);
-        const fileId = urlParams.get('fileId');
-        if (fileId) {
-            // TODO: Implement loading the file from Google Drive using the fileId
-            // This would require additional Google Drive API calls
+        const fileParam = urlParams.get('file');
+        if (fileParam) {
             showStatus('Loading shared file...');
+            const binaryContent = atob(decodeURIComponent(fileParam));
+            const typedArray = new Uint8Array(binaryContent.length);
+            for (let i = 0; i < binaryContent.length; i++) {
+                typedArray[i] = binaryContent.charCodeAt(i);
+            }
+            pdfjsLib.getDocument(typedArray).promise.then(loadPDF);
         }
 
         // Initial state: protection on
