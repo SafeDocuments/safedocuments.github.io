@@ -23,11 +23,11 @@
             font-size: 16px;
         }
         #viewArea {
-            position: relative;
             width: 100%;
             height: 600px;
             border: 1px solid #ccc;
             margin-top: 20px;
+            position: relative;
         }
         #shareableLink, #statusMessage, #debugMessage {
             margin-top: 20px;
@@ -57,14 +57,13 @@
             left: 0;
             width: 100%;
             height: 100%;
-            background-color: rgba(0, 0, 0, 0.7);
+            background-color: rgba(0, 0, 0, 0.8);
             display: flex;
             justify-content: center;
             align-items: center;
             font-size: 24px;
             color: white;
             z-index: 1000;
-            pointer-events: none;
         }
     </style>
 </head>
@@ -202,7 +201,11 @@
         }
 
         function displayFile(fileId) {
-            viewArea.innerHTML = `<iframe src="https://drive.google.com/file/d/${fileId}/preview" width="100%" height="100%"></iframe>`;
+            const pdfContent = document.getElementById('pdf-content');
+            pdfContent.innerHTML = `<iframe src="https://drive.google.com/file/d/${fileId}/preview" width="100%" height="600"></iframe>`;
+            
+            // Show the protection overlay by default
+            document.getElementById('protection-overlay').style.display = 'flex';
         }
 
         function generateShareableLink() {
@@ -232,26 +235,33 @@
         if (fileId) {
             displayFile(fileId);
             generateLinkButton.disabled = false;
+            // Ensure the protection overlay is visible on load
+            document.getElementById('protection-overlay').style.display = 'flex';
         }
 
-        // Protection mechanism
-        const pdfContent = document.getElementById('pdf-content');
+        // Modified protection mechanism
         const protectionOverlay = document.getElementById('protection-overlay');
 
-        pdfContent.addEventListener('mousemove', () => {
-            protectionOverlay.style.display = 'flex';
-        });
-        pdfContent.addEventListener('mouseleave', () => {
+        viewArea.addEventListener('mouseenter', () => {
             protectionOverlay.style.display = 'none';
         });
+        viewArea.addEventListener('mouseleave', () => {
+            protectionOverlay.style.display = 'flex';
+        });
         document.addEventListener('keydown', (e) => {
-            if (e.key === 'Meta' || e.key === 'Windows') {
+            if (e.key === 'Meta' || e.key === 'Control' || e.key === 'Alt' || e.key === 'Windows') {
                 e.preventDefault();
                 protectionOverlay.style.display = 'flex';
             }
         });
+        document.addEventListener('keyup', (e) => {
+            if (e.key === 'Meta' || e.key === 'Control' || e.key === 'Alt' || e.key === 'Windows') {
+                protectionOverlay.style.display = 'none';
+            }
+        });
         document.addEventListener('contextmenu', (e) => {
             e.preventDefault();
+            protectionOverlay.style.display = 'flex';
         });
     </script>
     <script async defer src="https://apis.google.com/js/api.js" onload="gapiLoaded()"></script>
