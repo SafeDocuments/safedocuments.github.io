@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PDF Upload and Google Drive Viewer with Enhanced Debug</title>
+    <title>PDF Upload and Google Drive Viewer with Fixed Multipart Request</title>
     <script src="https://apis.google.com/js/api.js"></script>
     <script src="https://accounts.google.com/gsi/client"></script>
     <style>
@@ -142,32 +142,50 @@
 
             showDebug('Metadata', metadata);
 
-            const form = new FormData();
-            form.append('metadata', new Blob([JSON.stringify(metadata)], {type: 'application/json'}));
-            form.append('file', file);
+            const boundary = '-------314159265358979323846';
+            const delimiter = "\r\n--" + boundary + "\r\n";
+            const close_delim = "\r\n--" + boundary + "--";
 
-            try {
-                showStatus('Uploading file...');
-                const response = await gapi.client.request({
-                    'path': 'https://www.googleapis.com/upload/drive/v3/files',
-                    'method': 'POST',
-                    'params': {'uploadType': 'multipart'},
-                    'headers': {
-                        'Content-Type': 'multipart/related; boundary=foo_bar_baz'
-                    },
-                    'body': form
-                });
+            const contentType = file.type || 'application/octet-stream';
+            const metadata_blob = new Blob([JSON.stringify(metadata)], { type: 'application/json' });
 
-                showStatus('File uploaded successfully!');
-                showDebug('Upload response', response);
-                generateLinkButton.disabled = false;
-                displayFile(response.result.id);
-            } catch (err) {
-                showError('Error uploading file', err);
-                if (err.result) {
-                    showDebug('Error result', err.result);
+            let reader = new FileReader();
+            reader.readAsArrayBuffer(file);
+            reader.onload = async function(e) {
+                const fileData = e.target.result;
+                const body = delimiter +
+                    'Content-Type: application/json\r\n\r\n' +
+                    JSON.stringify(metadata) +
+                    delimiter +
+                    'Content-Type: ' + contentType + '\r\n' +
+                    'Content-Transfer-Encoding: base64\r\n' +
+                    '\r\n' +
+                    btoa(String.fromCharCode.apply(null, new Uint8Array(fileData))) +
+                    close_delim;
+
+                try {
+                    showStatus('Uploading file...');
+                    const response = await gapi.client.request({
+                        'path': 'https://www.googleapis.com/upload/drive/v3/files',
+                        'method': 'POST',
+                        'params': {'uploadType': 'multipart'},
+                        'headers': {
+                            'Content-Type': 'multipart/related; boundary=' + boundary
+                        },
+                        'body': body
+                    });
+
+                    showStatus('File uploaded successfully!');
+                    showDebug('Upload response', response);
+                    generateLinkButton.disabled = false;
+                    displayFile(response.result.id);
+                } catch (err) {
+                    showError('Error uploading file', err);
+                    if (err.result) {
+                        showDebug('Error result', err.result);
+                    }
                 }
-            }
+            };
         }
 
         function displayFile(fileId) {
