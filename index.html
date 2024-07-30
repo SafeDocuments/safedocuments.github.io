@@ -303,12 +303,11 @@
         }
 
         function encrypt(text) {
-            return CryptoJS.AES.encrypt(text, ENCRYPTION_KEY).toString();
+            return btoa(text);
         }
 
         function decrypt(text) {
-            const bytes = CryptoJS.AES.decrypt(text, ENCRYPTION_KEY);
-            return bytes.toString(CryptoJS.enc.Utf8);
+            return atob(text);
         }
 
         function generateShareableLink() {
@@ -316,7 +315,7 @@
                 showStatus('No file has been uploaded yet.');
                 return;
             }
-            const encryptedFileId = encrypt(currentFileId).substring(0, 16); // Shorten the encrypted string
+            const encryptedFileId = encrypt(currentFileId);
             const currentUrl = window.location.href.split('?')[0];
             const shareableLink = `${currentUrl}?fileId=${encodeURIComponent(encryptedFileId)}`;
             shareableLinkDiv.textContent = shareableLink;
@@ -507,3 +506,4 @@
     <script async defer src="https://accounts.google.com/gsi/client" onload="gisLoaded()"></script>
 </body>
 </html>
+
