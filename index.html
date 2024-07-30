@@ -441,16 +441,11 @@
         document.addEventListener('keydown', function(e) {
             if (e.ctrlKey && e.key === 'p') {
                 e.preventDefault();
-                startProtection();
             }
             if (e.key === 'PrintScreen') {
                 e.preventDefault();
-                startProtection();
             }
-            if (e.key === 'Enter') {
-                e.preventDefault();
-                startProtection();
-            }
+            startProtection();
         });
 
         document.addEventListener('keyup', stopProtection);
