@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ssvfgoldenbeforelogo</title>
+    <title>Safe Documents</title>
     <script src="https://apis.google.com/js/api.js"></script>
     <script src="https://accounts.google.com/gsi/client"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.9.359/pdf.min.js"></script>
@@ -26,6 +26,7 @@
             padding: 20px;
             box-shadow: 0 0 10px rgba(0,0,0,0.5);
             background-color: #2a2a2a;
+            border-radius: 10px;
         }
         #top-bar {
             display: flex;
@@ -42,7 +43,7 @@
         button, #uploadButton, #generateLinkButton {
             margin: 0 5px;
             padding: 8px 12px;
-            background-color: #007bff;
+            background-color: #00a86b;
             border: none;
             border-radius: 4px;
             color: white;
@@ -54,7 +55,7 @@
             cursor: not-allowed;
         }
         button:hover:enabled, #uploadButton:hover:enabled, #generateLinkButton:hover:enabled {
-            background-color: #0056b3;
+            background-color: #007bff;
         }
         #pdf-viewer {
             flex-grow: 1;
@@ -128,7 +129,7 @@
         #copyButton {
             margin-top: 10px;
             padding: 8px 12px;
-            background-color: #007bff;
+            background-color: #00a86b;
             border: none;
             border-radius: 4px;
             color: white;
@@ -136,7 +137,7 @@
             transition: background-color 0.3s ease;
         }
         #copyButton:hover {
-            background-color: #0056b3;
+            background-color: #007bff;
         }
         canvas {
             max-width: 100%;
@@ -144,10 +145,23 @@
             border-radius: 4px;
             box-shadow: 0 0 10px rgba(0,0,0,0.5);
         }
+        #logo {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        #logo img {
+            width: 150px;
+            height: auto;
+        }
     </style>
 </head>
 <body>
     <div class="container">
+        <div id="logo">
+            <img src="https://github.com/SafeDocuments/safedocuments.github.io/blob/main/pikaso_enhance__none_4K_Standard_r_c_.jpeg?raw=true" alt="Safe Documents Logo">
+        </div>
         <div id="top-bar">
             <input type="file" id="fileInput" accept="application/pdf">
             <button id="uploadButton" disabled>Upload to Google Drive</button>
@@ -506,4 +520,3 @@
     <script async defer src="https://accounts.google.com/gsi/client" onload="gisLoaded()"></script>
 </body>
 </html>
-
