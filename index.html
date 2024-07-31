@@ -39,24 +39,24 @@
             border-bottom: 1px solid #444;
         }
         #fileInput {
-    display: none;
-}
+            display: none;
+        }
 
-#fileInputLabel {
-    margin: 0 5px;
-    padding: 8px 12px;
-    background-color: #00a86b;
-    border: none;
-    border-radius: 4px;
-    color: white;
-    cursor: pointer;
-    transition: background-color 0.3s ease;
-    display: inline-block;
-}
+        #fileInputLabel {
+            margin: 0 5px;
+            padding: 8px 12px;
+            background-color: #00a86b;
+            border: none;
+            border-radius: 4px;
+            color: white;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+            display: inline-block;
+        }
 
-#fileInputLabel:hover {
-    background-color: #007bff;
-}
+        #fileInputLabel:hover {
+            background-color: #007bff;
+        }
         button, #uploadButton, #generateLinkButton {
             margin: 0 5px;
             padding: 8px 12px;
@@ -173,7 +173,6 @@
             <input type="file" id="fileInput" accept="application/pdf">
             <label for="fileInput" id="fileInputLabel">Upload File</label>
             <input type="file" id="fileInput" accept="application/pdf">
-
             <button id="uploadButton" disabled>Upload to Google Drive</button>
             <button id="generateLinkButton" disabled>Generate Shareable Link</button>
             <div id="navigation">
@@ -525,6 +524,20 @@
             uploadButton.disabled = true;
             generateLinkButton.disabled = true;
         }
+
+        function isMobile() {
+            const userAgent = navigator.userAgent || navigator.vendor || window.opera;
+            return /android|iPad|iPhone|iPod/.test(userAgent) && !window.MSStream;
+        }
+
+        function handleMobileRedirect() {
+            if (isMobile()) {
+                document.body.innerHTML = '<div style="display: flex; align-items: center; justify-content: center; height: 100vh; text-align: center; background-color: #1a1a1a; color: #f7f7f7;"><h1>Access Denied</h1><p>This content is not accessible on mobile devices. Please use a desktop or laptop computer.</p></div>';
+            }
+        }
+
+        // Call handleMobileRedirect on page load
+        handleMobileRedirect();
 
         // Start protection immediately when the page loads
         startProtection();
