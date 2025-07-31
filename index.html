@@ -3,9 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="Secure PDF Document Viewer with Maximum Protection">
+    <meta name="description" content="Secure PDF Document Viewer with Smart Protection">
     <meta name="theme-color" content="#1e293b">
-    <title>Secure Document Viewer - Protected</title>
+    <title>Secure Document Viewer</title>
     
     <!-- External Libraries -->
     <script src="https://apis.google.com/js/api.js"></script>
@@ -48,6 +48,14 @@
             user-drag: none !important;
         }
 
+        /* Allow selection only in specific areas */
+        .selectable {
+            -webkit-user-select: text !important;
+            -moz-user-select: text !important;
+            -ms-user-select: text !important;
+            user-select: text !important;
+        }
+
         /* Disable highlighting */
         *::selection {
             background-color: transparent !important;
@@ -57,16 +65,6 @@
             background-color: transparent !important;
         }
 
-        /* Prevent right-click and context menu globally */
-        html {
-            -webkit-touch-callout: none;
-            -webkit-user-select: none;
-            -khtml-user-select: none;
-            -moz-user-select: none;
-            -ms-user-select: none;
-            user-select: none;
-        }
-
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
             background-color: var(--bg-primary);
@@ -74,12 +72,9 @@
             line-height: 1.6;
             overflow-x: hidden;
             position: relative;
-            /* Prevent screenshot tools */
-            -webkit-backdrop-filter: blur(0px);
-            backdrop-filter: blur(0px);
         }
 
-        /* Background Pattern with Security Watermark */
+        /* Background Pattern */
         body::before {
             content: '';
             position: fixed;
@@ -88,33 +83,10 @@
             right: 0;
             bottom: 0;
             background-image: 
-                repeating-linear-gradient(
-                    45deg,
-                    transparent,
-                    transparent 35px,
-                    rgba(255, 255, 255, 0.01) 35px,
-                    rgba(255, 255, 255, 0.01) 70px
-                ),
                 radial-gradient(circle at 20% 50%, rgba(59, 130, 246, 0.1) 0%, transparent 50%),
                 radial-gradient(circle at 80% 80%, rgba(16, 185, 129, 0.1) 0%, transparent 50%);
             pointer-events: none;
             z-index: 0;
-        }
-
-        /* Security Watermark Text */
-        body::after {
-            content: 'PROTECTED DOCUMENT - DO NOT SHARE';
-            position: fixed;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%) rotate(-45deg);
-            font-size: 8rem;
-            font-weight: 900;
-            color: rgba(255, 255, 255, 0.02);
-            pointer-events: none;
-            z-index: 1;
-            white-space: nowrap;
-            letter-spacing: 2rem;
         }
 
         /* Main Container */
@@ -389,7 +361,7 @@
             user-drag: none;
         }
 
-        /* Protection Overlay - Enhanced Security */
+        /* Protection Overlay */
         .protection-overlay {
             position: absolute;
             top: 0;
@@ -404,13 +376,14 @@
             align-items: center;
             z-index: 1000;
             pointer-events: all;
-            transition: opacity 0.1s ease;
-            opacity: 1;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.3s ease, visibility 0.3s ease;
         }
 
-        .protection-overlay.hidden {
-            opacity: 0;
-            pointer-events: none;
+        .protection-overlay.active {
+            opacity: 1;
+            visibility: visible;
         }
 
         .protection-content {
@@ -450,26 +423,6 @@
             font-size: 1rem;
             max-width: 400px;
             margin: 0 auto;
-        }
-
-        /* Anti-Screenshot Overlay */
-        .anti-screenshot {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            pointer-events: none;
-            z-index: 9999;
-            mix-blend-mode: difference;
-            opacity: 0.05;
-            background: repeating-linear-gradient(
-                0deg,
-                transparent,
-                transparent 2px,
-                rgba(255, 255, 255, 0.03) 2px,
-                rgba(255, 255, 255, 0.03) 4px
-            );
         }
 
         /* Mobile Blocker */
@@ -519,7 +472,7 @@
             bottom: 2rem;
             left: 50%;
             transform: translateX(-50%);
-            z-index: 1000;
+            z-index: 1001;
             pointer-events: none;
         }
 
@@ -548,6 +501,11 @@
         .status-message.error {
             border-color: var(--danger-color);
             background-color: rgba(239, 68, 68, 0.1);
+        }
+
+        .status-message.warning {
+            border-color: #f59e0b;
+            background-color: rgba(245, 158, 11, 0.1);
         }
 
         /* Modal */
@@ -664,23 +622,33 @@
             margin-bottom: 2rem;
         }
 
-        /* Dev Tools Blocker Message */
-        .devtools-blocker {
+        /* Security Indicator */
+        .security-indicator {
             position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background-color: var(--bg-primary);
-            display: none;
-            justify-content: center;
+            top: 1rem;
+            right: 1rem;
+            background-color: var(--bg-secondary);
+            padding: 0.5rem 1rem;
+            border-radius: 0.5rem;
+            display: flex;
             align-items: center;
-            z-index: 20000;
-            backdrop-filter: blur(20px);
+            gap: 0.5rem;
+            font-size: 0.875rem;
+            z-index: 1000;
+            transition: all 0.3s ease;
+            opacity: 0.8;
         }
 
-        .devtools-blocker.active {
-            display: flex;
+        .security-indicator.active {
+            background-color: var(--danger-color);
+            color: white;
+            opacity: 1;
+        }
+
+        .security-indicator.warning {
+            background-color: #f59e0b;
+            color: white;
+            opacity: 1;
         }
 
         /* Responsive Design */
@@ -721,11 +689,6 @@
             .protection-text {
                 font-size: 1.5rem;
             }
-
-            body::after {
-                font-size: 4rem;
-                letter-spacing: 1rem;
-            }
         }
 
         @media (max-width: 480px) {
@@ -743,42 +706,10 @@
                 min-width: 80px;
             }
 
-            .empty-state-icon {
-                width: 80px;
-                height: 80px;
-                font-size: 2rem;
+            .security-indicator {
+                font-size: 0.75rem;
+                padding: 0.375rem 0.75rem;
             }
-
-            .empty-state-title {
-                font-size: 1.25rem;
-            }
-
-            .protection-text {
-                font-size: 1.25rem;
-            }
-
-            .protection-icon {
-                width: 80px;
-                height: 80px;
-            }
-        }
-
-        /* Accessibility */
-        .sr-only {
-            position: absolute;
-            width: 1px;
-            height: 1px;
-            padding: 0;
-            margin: -1px;
-            overflow: hidden;
-            clip: rect(0, 0, 0, 0);
-            white-space: nowrap;
-            border-width: 0;
-        }
-
-        :focus-visible {
-            outline: 2px solid var(--primary-color);
-            outline-offset: 2px;
         }
 
         /* Print Protection */
@@ -809,33 +740,15 @@
             -ms-user-select: none;
             user-select: none;
         }
-
-        /* Invisible overlay for additional protection */
-        .security-film {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            z-index: 9998;
-            pointer-events: none;
-            background: repeating-linear-gradient(
-                45deg,
-                transparent,
-                transparent 10px,
-                rgba(255, 255, 255, 0.005) 10px,
-                rgba(255, 255, 255, 0.005) 20px
-            );
-        }
     </style>
 </head>
 <body class="no-select" oncopy="return false" oncut="return false" onpaste="return false" ondrag="return false" ondrop="return false" oncontextmenu="return false">
-    <!-- Security Film -->
-    <div class="security-film"></div>
-    
-    <!-- Anti-Screenshot Pattern -->
-    <div class="anti-screenshot"></div>
-    
+    <!-- Security Indicator -->
+    <div class="security-indicator" id="securityIndicator">
+        <span id="securityIcon">🔒</span>
+        <span id="securityText">Protected Mode</span>
+    </div>
+
     <!-- Mobile Blocker -->
     <div class="mobile-blocker" id="mobileBlocker">
         <div class="mobile-blocker-content">
@@ -844,17 +757,6 @@
             <p class="mobile-blocker-text">
                 This secure document viewer is not accessible on mobile devices. 
                 Please use a desktop or laptop computer to view protected documents.
-            </p>
-        </div>
-    </div>
-
-    <!-- DevTools Blocker -->
-    <div class="devtools-blocker" id="devtoolsBlocker">
-        <div class="mobile-blocker-content">
-            <div class="mobile-blocker-icon">⚠️</div>
-            <h1 class="mobile-blocker-title">Security Violation</h1>
-            <p class="mobile-blocker-text">
-                Developer tools detected. This action has been logged and reported.
             </p>
         </div>
     </div>
@@ -932,7 +834,7 @@
                             <span style="font-size: 3rem; color: white;">🛡️</span>
                         </div>
                         <div class="protection-text">PROTECTED CONTENT</div>
-                        <div class="protection-subtext">This document is secured against unauthorized access, screenshots, and data extraction</div>
+                        <div class="protection-subtext">Suspicious activity detected - Document secured</div>
                     </div>
                 </div>
             </div>
@@ -949,7 +851,7 @@
                     <p style="margin-bottom: 1rem; color: var(--text-secondary);">
                         Share this secure link to allow others to view the document:
                     </p>
-                    <div class="link-display" id="shareLink"></div>
+                    <div class="link-display selectable" id="shareLink"></div>
                     <p style="font-size: 0.875rem; color: var(--danger-color); text-align: center;">
                         ⚠️ This link provides view-only access with full security protection
                     </p>
@@ -977,7 +879,9 @@
             SCOPES: 'https://www.googleapis.com/auth/drive.file',
             FOLDER_ID: '1w17OEokh0z5o6MzXWjOYVUYITkW77Fnh',
             ENCRYPTION_KEY: 'SecureKey2024!@#$%^&*()_+',
-            PDF_WORKER_SRC: 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js'
+            PDF_WORKER_SRC: 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js',
+            PROTECTION_TIMEOUT: 5000, // 5 seconds before deactivating protection
+            SUSPICIOUS_TIMEOUT: 100 // How quickly to react to suspicious behavior
         };
 
         // Security: Detect and block mobile devices
@@ -1006,10 +910,9 @@
         let currentPage = 1;
         let totalPages = 0;
         let currentFileId = null;
-        let isProtected = true; // Always start protected
-        let protectionActive = true;
-        let lastMouseMove = Date.now();
-        let devToolsOpen = false;
+        let isSharedView = false; // Whether viewing via shared link
+        let protectionTimer = null;
+        let suspiciousActivity = false;
 
         // DOM Elements
         const elements = {
@@ -1032,49 +935,44 @@
             copyBtn: document.getElementById('copyBtn'),
             closeModalBtn: document.getElementById('closeModalBtn'),
             header: document.getElementById('header'),
-            devtoolsBlocker: document.getElementById('devtoolsBlocker')
+            securityIndicator: document.getElementById('securityIndicator'),
+            securityIcon: document.getElementById('securityIcon'),
+            securityText: document.getElementById('securityText')
         };
 
         // Initialize PDF.js
         pdfjsLib.GlobalWorkerOptions.workerSrc = CONFIG.PDF_WORKER_SRC;
 
-        // DevTools Detection
-        let devtools = {open: false, orientation: null};
-        const threshold = 160;
-        const emitEvent = (state, orientation) => {
-            if (state) {
-                devToolsOpen = true;
-                elements.devtoolsBlocker.classList.add('active');
-                // Clear the document
-                setTimeout(() => {
-                    document.body.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100vh;background:#000;color:#fff;font-size:2rem;">Security Violation Detected</div>';
-                }, 2000);
-            }
-        };
+        // Security Functions
+        function activateProtection(reason = 'Suspicious activity') {
+            suspiciousActivity = true;
+            elements.protectionOverlay.classList.add('active');
+            elements.securityIndicator.classList.add('active');
+            elements.securityIcon.textContent = '⚠️';
+            elements.securityText.textContent = 'Security Alert';
+            
+            // Clear any existing timer
+            clearTimeout(protectionTimer);
+            
+            // Log the security event
+            console.warn('Security activated:', reason);
+        }
 
-        setInterval(() => {
-            if (window.outerHeight - window.innerHeight > threshold || 
-                window.outerWidth - window.innerWidth > threshold) {
-                if (!devtools.open) {
-                    emitEvent(true, null);
-                    devtools.open = true;
-                }
-            } else {
-                devtools.open = false;
-            }
-        }, 100);
-
-        // Disable console
-        const disableConsole = () => {
-            const noop = () => {};
-            ['log', 'debug', 'info', 'warn', 'error', 'table', 'trace', 'dir'].forEach(method => {
-                window.console[method] = noop;
-            });
-        };
-        disableConsole();
+        function deactivateProtection() {
+            // Only deactivate if no suspicious activity is ongoing
+            if (!suspiciousActivity) return;
+            
+            protectionTimer = setTimeout(() => {
+                suspiciousActivity = false;
+                elements.protectionOverlay.classList.remove('active');
+                elements.securityIndicator.classList.remove('active');
+                elements.securityIcon.textContent = '🔒';
+                elements.securityText.textContent = 'Protected Mode';
+            }, CONFIG.PROTECTION_TIMEOUT);
+        }
 
         // Advanced keyboard protection
-        const blockedKeys = [
+        const suspiciousKeys = [
             {ctrl: true, shift: true, key: 'I'}, // DevTools
             {ctrl: true, shift: true, key: 'J'}, // Console
             {ctrl: true, shift: true, key: 'C'}, // Inspect
@@ -1084,68 +982,86 @@
             {ctrl: true, key: 'A'}, // Select all
             {ctrl: true, key: 'C'}, // Copy
             {ctrl: true, key: 'X'}, // Cut
-            {ctrl: true, key: 'V'}, // Paste
             {key: 'F12'}, // DevTools
             {key: 'PrintScreen'} // Screenshot
         ];
 
         document.addEventListener('keydown', (e) => {
-            // Check blocked key combinations
-            const blocked = blockedKeys.some(combo => {
+            // Check for suspicious key combinations
+            const isSuspicious = suspiciousKeys.some(combo => {
                 const ctrlMatch = combo.ctrl ? (e.ctrlKey || e.metaKey) : true;
                 const shiftMatch = combo.shift ? e.shiftKey : true;
                 const keyMatch = combo.key ? (e.key === combo.key || e.code === combo.key) : true;
                 return ctrlMatch && shiftMatch && keyMatch;
             });
 
-            if (blocked) {
+            if (isSuspicious) {
                 e.preventDefault();
                 e.stopPropagation();
                 e.stopImmediatePropagation();
                 
-                // Activate protection
-                if (isProtected) {
-                    activateProtection();
-                    showStatus('Action blocked for security reasons', 'error');
-                }
+                activateProtection(`Blocked key combination: ${e.key}`);
+                showStatus('Action blocked for security reasons', 'error');
+                
+                // Deactivate after timeout
+                deactivateProtection();
                 return false;
             }
 
-            // Always activate protection on any key press if protected
-            if (isProtected) {
-                activateProtection();
+            // For shared views, any key press activates protection briefly
+            if (isSharedView && currentPdf) {
+                activateProtection('Key press detected');
+                deactivateProtection();
             }
         }, true);
-
-        // Prevent text selection globally
-        document.addEventListener('selectstart', (e) => {
-            if (e.target.tagName !== 'INPUT' && e.target.tagName !== 'TEXTAREA') {
-                e.preventDefault();
-                return false;
-            }
-        });
-
-        // Disable drag and drop
-        document.addEventListener('dragstart', (e) => {
-            e.preventDefault();
-            return false;
-        });
-
-        document.addEventListener('drop', (e) => {
-            e.preventDefault();
-            return false;
-        });
 
         // Context menu prevention
         document.addEventListener('contextmenu', (e) => {
             e.preventDefault();
             e.stopPropagation();
-            if (isProtected) {
-                activateProtection();
-                showStatus('Right-click disabled', 'error');
-            }
+            activateProtection('Right-click detected');
+            showStatus('Right-click disabled for security', 'warning');
+            deactivateProtection();
             return false;
         }, true);
+
+        // Prevent text selection
+        document.addEventListener('selectstart', (e) => {
+            // Allow selection only in the share link modal
+            if (!e.target.closest('.selectable')) {
+                e.preventDefault();
+                return false;
+            }
+        });
+
+        // Window focus detection
+        window.addEventListener('blur', () => {
+            if (currentPdf) {
+                activateProtection('Window lost focus');
+            }
+        });
+
+        window.addEventListener('focus', () => {
+            deactivateProtection();
+        });
+
+        // DevTools detection (simplified version)
+        let devtools = {open: false};
+        const threshold = 160;
+
+        setInterval(() => {
+            if (window.outerHeight - window.innerHeight > threshold || 
+                window.outerWidth - window.innerWidth > threshold) {
+                if (!devtools.open) {
+                    devtools.open = true;
+                    activateProtection('Developer tools detected');
+                    showStatus('Developer tools are not allowed', 'error');
+                }
+            } else {
+                devtools.open = false;
+                deactivateProtection();
+            }
+        }, 500);
 
         // Google API Initialization
         function gapiLoaded() {
@@ -1228,10 +1144,8 @@
                 await renderPage(currentPage);
                 updateNavigation();
                 
-                // Start protection if not already active
-                if (!protectionActive) {
-                    initializeProtection();
-                }
+                // Initialize protection system
+                initializeProtection();
             } catch (error) {
                 throw error;
             }
@@ -1277,42 +1191,10 @@
                 
                 // Scroll to top when changing pages
                 elements.pdfViewer.scrollTop = 0;
-                
-                // Add watermark overlay
-                addWatermark(canvas);
             } catch (error) {
                 showStatus('Failed to render page', 'error');
                 console.error('Page render error:', error);
             }
-        }
-
-        function addWatermark(canvas) {
-            const watermarkCanvas = document.createElement('canvas');
-            watermarkCanvas.width = canvas.width;
-            watermarkCanvas.height = canvas.height;
-            watermarkCanvas.style.position = 'absolute';
-            watermarkCanvas.style.top = '0';
-            watermarkCanvas.style.left = '0';
-            watermarkCanvas.style.pointerEvents = 'none';
-            watermarkCanvas.style.opacity = '0.1';
-            
-            const ctx = watermarkCanvas.getContext('2d');
-            ctx.font = '48px Arial';
-            ctx.fillStyle = 'red';
-            ctx.textAlign = 'center';
-            ctx.translate(watermarkCanvas.width / 2, watermarkCanvas.height / 2);
-            ctx.rotate(-45 * Math.PI / 180);
-            
-            const text = 'CONFIDENTIAL';
-            const lineHeight = 100;
-            for (let y = -watermarkCanvas.height; y < watermarkCanvas.height * 2; y += lineHeight) {
-                for (let x = -watermarkCanvas.width; x < watermarkCanvas.width * 2; x += 300) {
-                    ctx.fillText(text, x, y);
-                }
-            }
-            
-            canvas.parentElement.style.position = 'relative';
-            canvas.parentElement.appendChild(watermarkCanvas);
         }
 
         // Navigation
@@ -1334,94 +1216,32 @@
             elements.nextBtn.disabled = currentPage === totalPages;
         }
 
-        // Enhanced Protection System
+        // Protection System
         function initializeProtection() {
-            if (protectionActive) return;
-            protectionActive = true;
-            
-            // Start with protection active
-            activateProtection();
-            
-            // Mouse events for PDF viewer area
-            elements.pdfViewer.addEventListener('mouseenter', () => {
-                if (isProtected) activateProtection();
-            });
-            
-            elements.pdfViewer.addEventListener('mousemove', (e) => {
-                lastMouseMove = Date.now();
-                if (isProtected) {
-                    // Only deactivate briefly when actively moving mouse
-                    deactivateProtection();
-                    setTimeout(() => {
-                        if (Date.now() - lastMouseMove > 100) {
-                            activateProtection();
-                        }
-                    }, 150);
-                }
-            });
-            
-            elements.pdfViewer.addEventListener('mouseleave', () => {
-                if (isProtected) activateProtection();
-            });
-            
-            // Header area allows mouse movement
-            elements.header.addEventListener('mouseenter', () => {
-                if (!isProtected) return;
-                deactivateProtection();
-            });
-            
-            elements.header.addEventListener('mouseleave', () => {
-                if (isProtected) activateProtection();
-            });
-            
-            // Window events
-            window.addEventListener('blur', () => {
-                if (isProtected) activateProtection();
-            });
-            
-            window.addEventListener('resize', () => {
-                if (isProtected) activateProtection();
-            });
-            
-            // Visibility change
-            document.addEventListener('visibilitychange', () => {
-                if (document.hidden && isProtected) {
-                    activateProtection();
-                }
-            });
-            
-            // Touch events for tablets
-            elements.pdfViewer.addEventListener('touchstart', (e) => {
-                if (isProtected) {
-                    e.preventDefault();
-                    activateProtection();
-                }
-            });
-            
-            // Scroll protection
-            elements.pdfViewer.addEventListener('scroll', () => {
-                if (isProtected) {
-                    // Allow scrolling but keep protection visible
-                    if (!elements.protectionOverlay.classList.contains('hidden')) {
-                        elements.protectionOverlay.style.top = elements.pdfViewer.scrollTop + 'px';
+            // For shared views, monitor mouse movement more strictly
+            if (isSharedView) {
+                elements.pdfViewer.addEventListener('mouseenter', () => {
+                    activateProtection('Mouse entered protected area');
+                });
+                
+                elements.pdfViewer.addEventListener('mousemove', () => {
+                    if (!suspiciousActivity) {
+                        activateProtection('Mouse movement detected');
+                        deactivateProtection();
                     }
+                });
+                
+                elements.pdfViewer.addEventListener('mouseleave', () => {
+                    deactivateProtection();
+                });
+            }
+            
+            // Allow header interaction without protection
+            elements.header.addEventListener('mouseenter', () => {
+                if (!isSharedView) {
+                    deactivateProtection();
                 }
             });
-            
-            // Periodic check
-            setInterval(() => {
-                if (isProtected && Date.now() - lastMouseMove > 3000) {
-                    activateProtection();
-                }
-            }, 1000);
-        }
-
-        function activateProtection() {
-            elements.protectionOverlay.classList.remove('hidden');
-        }
-
-        function deactivateProtection() {
-            elements.protectionOverlay.classList.add('hidden');
         }
 
         // Google Drive Upload
@@ -1503,25 +1323,39 @@
             elements.shareModal.classList.add('active');
         }
 
-        function copyShareLink() {
+        async function copyShareLink() {
             const link = elements.shareLink.textContent;
             
-            // Create temporary input to copy
-            const tempInput = document.createElement('input');
-            tempInput.style.position = 'fixed';
-            tempInput.style.opacity = '0';
-            tempInput.value = link;
-            document.body.appendChild(tempInput);
-            tempInput.select();
-            
             try {
-                document.execCommand('copy');
-                showStatus('Link copied to clipboard!', 'success');
-                setTimeout(closeShareModal, 1500);
+                // Try modern clipboard API first
+                if (navigator.clipboard && navigator.clipboard.writeText) {
+                    await navigator.clipboard.writeText(link);
+                    showStatus('Link copied to clipboard!', 'success');
+                    setTimeout(closeShareModal, 1500);
+                } else {
+                    // Fallback method
+                    const textArea = document.createElement('textarea');
+                    textArea.value = link;
+                    textArea.style.position = 'fixed';
+                    textArea.style.left = '-999999px';
+                    textArea.style.top = '-999999px';
+                    document.body.appendChild(textArea);
+                    textArea.focus();
+                    textArea.select();
+                    
+                    const successful = document.execCommand('copy');
+                    document.body.removeChild(textArea);
+                    
+                    if (successful) {
+                        showStatus('Link copied to clipboard!', 'success');
+                        setTimeout(closeShareModal, 1500);
+                    } else {
+                        showStatus('Failed to copy - please copy manually', 'error');
+                    }
+                }
             } catch (err) {
-                showStatus('Failed to copy link', 'error');
-            } finally {
-                document.body.removeChild(tempInput);
+                showStatus('Failed to copy - please copy manually', 'error');
+                console.error('Copy error:', err);
             }
         }
 
@@ -1549,6 +1383,7 @@
             const encryptedId = params.get('doc');
             
             if (encryptedId) {
+                isSharedView = true; // Mark as shared view
                 try {
                     const fileId = decryptFileId(decodeURIComponent(encryptedId));
                     await loadSharedDocument(fileId);
@@ -1576,10 +1411,10 @@
                 
                 await loadPDF(typedArray);
                 
-                // Maximum protection for shared documents
-                isProtected = true;
-                protectionActive = true;
-                initializeProtection();
+                // Update security indicator for shared view
+                elements.securityIndicator.classList.add('warning');
+                elements.securityIcon.textContent = '🔐';
+                elements.securityText.textContent = 'Secure View Mode';
                 
                 // Disable all controls for shared view
                 elements.fileInput.disabled = true;
@@ -1589,10 +1424,7 @@
                 elements.uploadBtn.style.display = 'none';
                 elements.shareBtn.style.display = 'none';
                 
-                showStatus('Document loaded - Protected Mode Active', 'success');
-                
-                // Start protection immediately
-                activateProtection();
+                showStatus('Document loaded in secure view mode', 'success');
             } catch (error) {
                 showStatus('Failed to load shared document', 'error');
                 console.error('Load error:', error);
@@ -1631,22 +1463,20 @@
         document.addEventListener('keydown', (e) => {
             if (!currentPdf || e.target.tagName === 'INPUT') return;
             
-            // Only allow basic navigation
-            switch(e.key) {
-                case 'ArrowLeft':
-                case 'PageUp':
-                    if (!isProtected || !e.ctrlKey) {
+            // Only allow basic navigation with arrow keys
+            if (!e.ctrlKey && !e.shiftKey && !e.altKey) {
+                switch(e.key) {
+                    case 'ArrowLeft':
+                    case 'PageUp':
                         e.preventDefault();
                         navigatePage(-1);
-                    }
-                    break;
-                case 'ArrowRight':
-                case 'PageDown':
-                    if (!isProtected || !e.ctrlKey) {
+                        break;
+                    case 'ArrowRight':
+                    case 'PageDown':
                         e.preventDefault();
                         navigatePage(1);
-                    }
-                    break;
+                        break;
+                }
             }
         });
 
@@ -1674,43 +1504,15 @@
             }
         });
 
-        // Additional Security Measures
-        
-        // Disable save dialog
-        window.addEventListener('beforeunload', (e) => {
-            if (isProtected) {
-                e.preventDefault();
-                e.returnValue = '';
-            }
+        // Prevent drag and drop
+        document.addEventListener('dragstart', (e) => {
+            e.preventDefault();
+            return false;
         });
 
-        // Clear clipboard periodically when protected
-        setInterval(() => {
-            if (isProtected && document.hasFocus()) {
-                try {
-                    navigator.clipboard.writeText('');
-                } catch (e) {
-                    // Clipboard API might not be available
-                }
-            }
-        }, 5000);
-
-        // Prevent screenshot extensions
-        document.addEventListener('DOMContentLoaded', () => {
-            const style = document.createElement('style');
-            style.textContent = `
-                @media screen {
-                    body {
-                        filter: brightness(1);
-                    }
-                }
-                @media print {
-                    body {
-                        display: none !important;
-                    }
-                }
-            `;
-            document.head.appendChild(style);
+        document.addEventListener('drop', (e) => {
+            e.preventDefault();
+            return false;
         });
 
         // Initialize on load
@@ -1722,19 +1524,16 @@
             
             gapiLoaded();
             gisLoaded();
-            
-            // Start protection system
-            initializeProtection();
         });
 
-        // Prevent viewing page source
-        document.onkeydown = function(e) {
-            if (e.keyCode == 123) return false; // F12
-            if (e.ctrlKey && e.shiftKey && e.keyCode == 'I'.charCodeAt(0)) return false;
-            if (e.ctrlKey && e.shiftKey && e.keyCode == 'C'.charCodeAt(0)) return false;
-            if (e.ctrlKey && e.shiftKey && e.keyCode == 'J'.charCodeAt(0)) return false;
-            if (e.ctrlKey && e.keyCode == 'U'.charCodeAt(0)) return false;
-        };
+        // Escape key to close modals
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                if (elements.shareModal.classList.contains('active')) {
+                    closeShareModal();
+                }
+            }
+        });
     </script>
 </body>
 </html>
