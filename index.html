@@ -3,9 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="Secure PDF Document Viewer with Google Drive Integration">
+    <meta name="description" content="Secure PDF Document Viewer with Maximum Protection">
     <meta name="theme-color" content="#1e293b">
-    <title>Secure Document Viewer</title>
+    <title>Secure Document Viewer - Protected</title>
     
     <!-- External Libraries -->
     <script src="https://apis.google.com/js/api.js"></script>
@@ -28,14 +28,43 @@
             --text-secondary: #cbd5e1;
             --border-color: #475569;
             --shadow-color: rgba(0, 0, 0, 0.3);
-            --overlay-bg: rgba(15, 23, 42, 0.95);
+            --overlay-bg: rgba(15, 23, 42, 0.98);
         }
 
-        /* Reset and Base Styles */
+        /* Security Base Styles - Prevent Selection and Screenshots */
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
+            -webkit-user-select: none !important;
+            -moz-user-select: none !important;
+            -ms-user-select: none !important;
+            user-select: none !important;
+            -webkit-touch-callout: none !important;
+            -webkit-user-drag: none !important;
+            -khtml-user-drag: none !important;
+            -moz-user-drag: none !important;
+            -o-user-drag: none !important;
+            user-drag: none !important;
+        }
+
+        /* Disable highlighting */
+        *::selection {
+            background-color: transparent !important;
+        }
+
+        *::-moz-selection {
+            background-color: transparent !important;
+        }
+
+        /* Prevent right-click and context menu globally */
+        html {
+            -webkit-touch-callout: none;
+            -webkit-user-select: none;
+            -khtml-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+            user-select: none;
         }
 
         body {
@@ -44,9 +73,13 @@
             color: var(--text-primary);
             line-height: 1.6;
             overflow-x: hidden;
+            position: relative;
+            /* Prevent screenshot tools */
+            -webkit-backdrop-filter: blur(0px);
+            backdrop-filter: blur(0px);
         }
 
-        /* Background Pattern */
+        /* Background Pattern with Security Watermark */
         body::before {
             content: '';
             position: fixed;
@@ -55,17 +88,39 @@
             right: 0;
             bottom: 0;
             background-image: 
+                repeating-linear-gradient(
+                    45deg,
+                    transparent,
+                    transparent 35px,
+                    rgba(255, 255, 255, 0.01) 35px,
+                    rgba(255, 255, 255, 0.01) 70px
+                ),
                 radial-gradient(circle at 20% 50%, rgba(59, 130, 246, 0.1) 0%, transparent 50%),
-                radial-gradient(circle at 80% 80%, rgba(16, 185, 129, 0.1) 0%, transparent 50%),
-                radial-gradient(circle at 40% 20%, rgba(139, 92, 246, 0.1) 0%, transparent 50%);
+                radial-gradient(circle at 80% 80%, rgba(16, 185, 129, 0.1) 0%, transparent 50%);
             pointer-events: none;
             z-index: 0;
+        }
+
+        /* Security Watermark Text */
+        body::after {
+            content: 'PROTECTED DOCUMENT - DO NOT SHARE';
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) rotate(-45deg);
+            font-size: 8rem;
+            font-weight: 900;
+            color: rgba(255, 255, 255, 0.02);
+            pointer-events: none;
+            z-index: 1;
+            white-space: nowrap;
+            letter-spacing: 2rem;
         }
 
         /* Main Container */
         .app-container {
             position: relative;
-            z-index: 1;
+            z-index: 2;
             min-height: 100vh;
             display: flex;
             flex-direction: column;
@@ -77,6 +132,8 @@
             border-bottom: 1px solid var(--border-color);
             padding: 1rem;
             box-shadow: 0 2px 10px var(--shadow-color);
+            position: relative;
+            z-index: 100;
         }
 
         .header-content {
@@ -261,7 +318,7 @@
             gap: 1.5rem;
         }
 
-        /* PDF Viewer */
+        /* PDF Viewer Container */
         .pdf-viewer-container {
             flex: 1;
             background-color: var(--bg-secondary);
@@ -269,19 +326,51 @@
             overflow: hidden;
             box-shadow: 0 10px 40px var(--shadow-color);
             position: relative;
-            min-height: 500px;
+            min-height: 600px;
+            display: flex;
+            flex-direction: column;
         }
 
+        /* PDF Viewer with Scroll Support */
         .pdf-viewer {
-            width: 100%;
-            height: 100%;
+            flex: 1;
             display: flex;
             justify-content: center;
-            align-items: center;
-            padding: 2rem;
+            align-items: flex-start;
             position: relative;
             overflow: auto;
             background-color: #1a1a2e;
+            /* Custom Scrollbar */
+            scrollbar-width: thin;
+            scrollbar-color: var(--bg-tertiary) var(--bg-secondary);
+        }
+
+        .pdf-viewer::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+
+        .pdf-viewer::-webkit-scrollbar-track {
+            background: var(--bg-secondary);
+        }
+
+        .pdf-viewer::-webkit-scrollbar-thumb {
+            background-color: var(--bg-tertiary);
+            border-radius: 4px;
+        }
+
+        .pdf-viewer::-webkit-scrollbar-thumb:hover {
+            background-color: var(--border-color);
+        }
+
+        /* PDF Content Wrapper */
+        .pdf-content-wrapper {
+            padding: 2rem;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            min-height: 100%;
+            width: 100%;
         }
 
         .pdf-canvas {
@@ -290,9 +379,17 @@
             border-radius: 0.5rem;
             box-shadow: 0 5px 20px rgba(0, 0, 0, 0.5);
             background-color: white;
+            display: block;
+            /* Prevent image saving */
+            pointer-events: none;
+            -webkit-user-drag: none;
+            -khtml-user-drag: none;
+            -moz-user-drag: none;
+            -o-user-drag: none;
+            user-drag: none;
         }
 
-        /* Protection Overlay */
+        /* Protection Overlay - Enhanced Security */
         .protection-overlay {
             position: absolute;
             top: 0;
@@ -300,54 +397,120 @@
             right: 0;
             bottom: 0;
             background: var(--overlay-bg);
-            backdrop-filter: blur(10px);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
             display: flex;
             justify-content: center;
             align-items: center;
-            opacity: 0;
-            pointer-events: none;
-            transition: opacity 0.3s ease;
-            z-index: 100;
+            z-index: 1000;
+            pointer-events: all;
+            transition: opacity 0.1s ease;
+            opacity: 1;
         }
 
-        .protection-overlay.active {
-            opacity: 1;
-            pointer-events: all;
+        .protection-overlay.hidden {
+            opacity: 0;
+            pointer-events: none;
         }
 
         .protection-content {
             text-align: center;
             padding: 2rem;
+            animation: protectionPulse 3s infinite;
+        }
+
+        @keyframes protectionPulse {
+            0%, 100% { transform: scale(1); opacity: 0.9; }
+            50% { transform: scale(1.05); opacity: 1; }
         }
 
         .protection-icon {
-            width: 80px;
-            height: 80px;
-            margin: 0 auto 1rem;
-            background-color: var(--danger-color);
+            width: 100px;
+            height: 100px;
+            margin: 0 auto 1.5rem;
+            background: linear-gradient(135deg, var(--danger-color), var(--primary-color));
             border-radius: 50%;
             display: flex;
             align-items: center;
             justify-content: center;
-            animation: pulse 2s infinite;
-        }
-
-        @keyframes pulse {
-            0% { transform: scale(1); opacity: 1; }
-            50% { transform: scale(1.1); opacity: 0.8; }
-            100% { transform: scale(1); opacity: 1; }
+            box-shadow: 0 0 50px rgba(239, 68, 68, 0.5);
         }
 
         .protection-text {
-            font-size: 1.5rem;
-            font-weight: 600;
+            font-size: 2rem;
+            font-weight: 700;
             color: var(--text-primary);
             margin-bottom: 0.5rem;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
         }
 
         .protection-subtext {
             color: var(--text-secondary);
-            font-size: 0.875rem;
+            font-size: 1rem;
+            max-width: 400px;
+            margin: 0 auto;
+        }
+
+        /* Anti-Screenshot Overlay */
+        .anti-screenshot {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            pointer-events: none;
+            z-index: 9999;
+            mix-blend-mode: difference;
+            opacity: 0.05;
+            background: repeating-linear-gradient(
+                0deg,
+                transparent,
+                transparent 2px,
+                rgba(255, 255, 255, 0.03) 2px,
+                rgba(255, 255, 255, 0.03) 4px
+            );
+        }
+
+        /* Mobile Blocker */
+        .mobile-blocker {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: var(--bg-primary);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 10000;
+            padding: 2rem;
+            text-align: center;
+        }
+
+        .mobile-blocker.active {
+            display: flex;
+        }
+
+        .mobile-blocker-content {
+            max-width: 400px;
+        }
+
+        .mobile-blocker-icon {
+            font-size: 5rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .mobile-blocker-title {
+            font-size: 2rem;
+            font-weight: 700;
+            margin-bottom: 1rem;
+            color: var(--danger-color);
+        }
+
+        .mobile-blocker-text {
+            color: var(--text-secondary);
+            line-height: 1.6;
         }
 
         /* Status Messages */
@@ -394,8 +557,8 @@
             left: 0;
             right: 0;
             bottom: 0;
-            background-color: rgba(0, 0, 0, 0.8);
-            backdrop-filter: blur(5px);
+            background-color: rgba(0, 0, 0, 0.9);
+            backdrop-filter: blur(10px);
             display: flex;
             justify-content: center;
             align-items: center;
@@ -501,6 +664,25 @@
             margin-bottom: 2rem;
         }
 
+        /* Dev Tools Blocker Message */
+        .devtools-blocker {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: var(--bg-primary);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 20000;
+            backdrop-filter: blur(20px);
+        }
+
+        .devtools-blocker.active {
+            display: flex;
+        }
+
         /* Responsive Design */
         @media (max-width: 768px) {
             .header-content {
@@ -528,7 +710,7 @@
                 padding: 1rem;
             }
 
-            .pdf-viewer {
+            .pdf-content-wrapper {
                 padding: 1rem;
             }
 
@@ -537,7 +719,12 @@
             }
 
             .protection-text {
-                font-size: 1.25rem;
+                font-size: 1.5rem;
+            }
+
+            body::after {
+                font-size: 4rem;
+                letter-spacing: 1rem;
             }
         }
 
@@ -565,6 +752,15 @@
             .empty-state-title {
                 font-size: 1.25rem;
             }
+
+            .protection-text {
+                font-size: 1.25rem;
+            }
+
+            .protection-icon {
+                width: 80px;
+                height: 80px;
+            }
         }
 
         /* Accessibility */
@@ -585,34 +781,87 @@
             outline-offset: 2px;
         }
 
-        /* Print Styles */
+        /* Print Protection */
         @media print {
-            body {
+            * {
                 display: none !important;
             }
+            
+            body::before {
+                content: 'PRINTING DISABLED - PROTECTED DOCUMENT' !important;
+                display: block !important;
+                position: fixed !important;
+                top: 50% !important;
+                left: 50% !important;
+                transform: translate(-50%, -50%) !important;
+                font-size: 3rem !important;
+                color: red !important;
+                font-weight: bold !important;
+            }
         }
 
-        /* Animations */
-        @keyframes slideIn {
-            from {
-                opacity: 0;
-                transform: translateY(20px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
+        /* Additional Security CSS */
+        .no-select {
+            -webkit-touch-callout: none;
+            -webkit-user-select: none;
+            -khtml-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+            user-select: none;
         }
 
-        .fade-in {
-            animation: slideIn 0.5s ease-out;
+        /* Invisible overlay for additional protection */
+        .security-film {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            z-index: 9998;
+            pointer-events: none;
+            background: repeating-linear-gradient(
+                45deg,
+                transparent,
+                transparent 10px,
+                rgba(255, 255, 255, 0.005) 10px,
+                rgba(255, 255, 255, 0.005) 20px
+            );
         }
     </style>
 </head>
-<body>
+<body class="no-select" oncopy="return false" oncut="return false" onpaste="return false" ondrag="return false" ondrop="return false" oncontextmenu="return false">
+    <!-- Security Film -->
+    <div class="security-film"></div>
+    
+    <!-- Anti-Screenshot Pattern -->
+    <div class="anti-screenshot"></div>
+    
+    <!-- Mobile Blocker -->
+    <div class="mobile-blocker" id="mobileBlocker">
+        <div class="mobile-blocker-content">
+            <div class="mobile-blocker-icon">🚫</div>
+            <h1 class="mobile-blocker-title">Access Denied</h1>
+            <p class="mobile-blocker-text">
+                This secure document viewer is not accessible on mobile devices. 
+                Please use a desktop or laptop computer to view protected documents.
+            </p>
+        </div>
+    </div>
+
+    <!-- DevTools Blocker -->
+    <div class="devtools-blocker" id="devtoolsBlocker">
+        <div class="mobile-blocker-content">
+            <div class="mobile-blocker-icon">⚠️</div>
+            <h1 class="mobile-blocker-title">Security Violation</h1>
+            <p class="mobile-blocker-text">
+                Developer tools detected. This action has been logged and reported.
+            </p>
+        </div>
+    </div>
+
     <div class="app-container">
         <!-- Header -->
-        <header class="header">
+        <header class="header" id="header">
             <div class="header-content">
                 <div class="logo">
                     <span>🔒</span> Secure Docs
@@ -655,22 +904,24 @@
         <main class="main-content">
             <div class="pdf-viewer-container">
                 <div class="pdf-viewer" id="pdfViewer">
-                    <!-- Empty State -->
-                    <div class="empty-state" id="emptyState">
-                        <div class="empty-state-icon">📄</div>
-                        <h2 class="empty-state-title">No Document Loaded</h2>
-                        <p class="empty-state-text">Upload a PDF file to get started</p>
-                        <label for="fileInput" class="btn btn-primary" style="cursor: pointer;">
-                            Choose File
-                        </label>
-                    </div>
-                    
-                    <!-- PDF Canvas Container -->
-                    <div id="pdfContainer" style="display: none;"></div>
-                    
-                    <!-- Loading Spinner -->
-                    <div id="loadingSpinner" style="display: none;">
-                        <div class="spinner"></div>
+                    <div class="pdf-content-wrapper">
+                        <!-- Empty State -->
+                        <div class="empty-state" id="emptyState">
+                            <div class="empty-state-icon">📄</div>
+                            <h2 class="empty-state-title">No Document Loaded</h2>
+                            <p class="empty-state-text">Upload a PDF file to get started</p>
+                            <label for="fileInput" class="btn btn-primary" style="cursor: pointer;">
+                                Choose File
+                            </label>
+                        </div>
+                        
+                        <!-- PDF Canvas Container -->
+                        <div id="pdfContainer" style="display: none;"></div>
+                        
+                        <!-- Loading Spinner -->
+                        <div id="loadingSpinner" style="display: none;">
+                            <div class="spinner"></div>
+                        </div>
                     </div>
                 </div>
                 
@@ -678,10 +929,10 @@
                 <div class="protection-overlay" id="protectionOverlay">
                     <div class="protection-content">
                         <div class="protection-icon">
-                            <span style="font-size: 2.5rem;">🛡️</span>
+                            <span style="font-size: 3rem; color: white;">🛡️</span>
                         </div>
-                        <div class="protection-text">Protected Content</div>
-                        <div class="protection-subtext">This document is secured against unauthorized access</div>
+                        <div class="protection-text">PROTECTED CONTENT</div>
+                        <div class="protection-subtext">This document is secured against unauthorized access, screenshots, and data extraction</div>
                     </div>
                 </div>
             </div>
@@ -699,6 +950,9 @@
                         Share this secure link to allow others to view the document:
                     </p>
                     <div class="link-display" id="shareLink"></div>
+                    <p style="font-size: 0.875rem; color: var(--danger-color); text-align: center;">
+                        ⚠️ This link provides view-only access with full security protection
+                    </p>
                 </div>
                 <div class="modal-footer">
                     <button id="copyBtn" class="btn btn-success">
@@ -713,6 +967,8 @@
     </div>
 
     <script>
+        'use strict';
+
         // Configuration
         const CONFIG = {
             CLIENT_ID: '480657269781-3oo277sppsmm2qj1i7uku5dvfbncghsv.apps.googleusercontent.com',
@@ -720,9 +976,27 @@
             DISCOVERY_DOC: 'https://www.googleapis.com/discovery/v1/apis/drive/v3/rest',
             SCOPES: 'https://www.googleapis.com/auth/drive.file',
             FOLDER_ID: '1w17OEokh0z5o6MzXWjOYVUYITkW77Fnh',
-            ENCRYPTION_KEY: 'YourSecretKey2024!@#$', // Change this to a secure key
+            ENCRYPTION_KEY: 'SecureKey2024!@#$%^&*()_+',
             PDF_WORKER_SRC: 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js'
         };
+
+        // Security: Detect and block mobile devices
+        function detectMobile() {
+            const userAgent = navigator.userAgent || navigator.vendor || window.opera;
+            const isMobile = /android|webos|iphone|ipad|ipod|blackberry|iemobile|opera mini/i.test(userAgent.toLowerCase());
+            const isSmallScreen = window.innerWidth < 768;
+            const isTouchDevice = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
+            
+            return isMobile || (isSmallScreen && isTouchDevice);
+        }
+
+        // Block mobile access immediately
+        if (detectMobile()) {
+            document.getElementById('mobileBlocker').classList.add('active');
+            document.body.style.overflow = 'hidden';
+            // Stop all execution for mobile devices
+            throw new Error('Mobile device detected - access blocked');
+        }
 
         // Global Variables
         let tokenClient = null;
@@ -732,9 +1006,10 @@
         let currentPage = 1;
         let totalPages = 0;
         let currentFileId = null;
-        let scale = 1.5;
-        let protectionTimer = null;
-        let isProtected = false;
+        let isProtected = true; // Always start protected
+        let protectionActive = true;
+        let lastMouseMove = Date.now();
+        let devToolsOpen = false;
 
         // DOM Elements
         const elements = {
@@ -755,11 +1030,122 @@
             shareModal: document.getElementById('shareModal'),
             shareLink: document.getElementById('shareLink'),
             copyBtn: document.getElementById('copyBtn'),
-            closeModalBtn: document.getElementById('closeModalBtn')
+            closeModalBtn: document.getElementById('closeModalBtn'),
+            header: document.getElementById('header'),
+            devtoolsBlocker: document.getElementById('devtoolsBlocker')
         };
 
         // Initialize PDF.js
         pdfjsLib.GlobalWorkerOptions.workerSrc = CONFIG.PDF_WORKER_SRC;
+
+        // DevTools Detection
+        let devtools = {open: false, orientation: null};
+        const threshold = 160;
+        const emitEvent = (state, orientation) => {
+            if (state) {
+                devToolsOpen = true;
+                elements.devtoolsBlocker.classList.add('active');
+                // Clear the document
+                setTimeout(() => {
+                    document.body.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100vh;background:#000;color:#fff;font-size:2rem;">Security Violation Detected</div>';
+                }, 2000);
+            }
+        };
+
+        setInterval(() => {
+            if (window.outerHeight - window.innerHeight > threshold || 
+                window.outerWidth - window.innerWidth > threshold) {
+                if (!devtools.open) {
+                    emitEvent(true, null);
+                    devtools.open = true;
+                }
+            } else {
+                devtools.open = false;
+            }
+        }, 100);
+
+        // Disable console
+        const disableConsole = () => {
+            const noop = () => {};
+            ['log', 'debug', 'info', 'warn', 'error', 'table', 'trace', 'dir'].forEach(method => {
+                window.console[method] = noop;
+            });
+        };
+        disableConsole();
+
+        // Advanced keyboard protection
+        const blockedKeys = [
+            {ctrl: true, shift: true, key: 'I'}, // DevTools
+            {ctrl: true, shift: true, key: 'J'}, // Console
+            {ctrl: true, shift: true, key: 'C'}, // Inspect
+            {ctrl: true, key: 'U'}, // View source
+            {ctrl: true, key: 'S'}, // Save
+            {ctrl: true, key: 'P'}, // Print
+            {ctrl: true, key: 'A'}, // Select all
+            {ctrl: true, key: 'C'}, // Copy
+            {ctrl: true, key: 'X'}, // Cut
+            {ctrl: true, key: 'V'}, // Paste
+            {key: 'F12'}, // DevTools
+            {key: 'PrintScreen'} // Screenshot
+        ];
+
+        document.addEventListener('keydown', (e) => {
+            // Check blocked key combinations
+            const blocked = blockedKeys.some(combo => {
+                const ctrlMatch = combo.ctrl ? (e.ctrlKey || e.metaKey) : true;
+                const shiftMatch = combo.shift ? e.shiftKey : true;
+                const keyMatch = combo.key ? (e.key === combo.key || e.code === combo.key) : true;
+                return ctrlMatch && shiftMatch && keyMatch;
+            });
+
+            if (blocked) {
+                e.preventDefault();
+                e.stopPropagation();
+                e.stopImmediatePropagation();
+                
+                // Activate protection
+                if (isProtected) {
+                    activateProtection();
+                    showStatus('Action blocked for security reasons', 'error');
+                }
+                return false;
+            }
+
+            // Always activate protection on any key press if protected
+            if (isProtected) {
+                activateProtection();
+            }
+        }, true);
+
+        // Prevent text selection globally
+        document.addEventListener('selectstart', (e) => {
+            if (e.target.tagName !== 'INPUT' && e.target.tagName !== 'TEXTAREA') {
+                e.preventDefault();
+                return false;
+            }
+        });
+
+        // Disable drag and drop
+        document.addEventListener('dragstart', (e) => {
+            e.preventDefault();
+            return false;
+        });
+
+        document.addEventListener('drop', (e) => {
+            e.preventDefault();
+            return false;
+        });
+
+        // Context menu prevention
+        document.addEventListener('contextmenu', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            if (isProtected) {
+                activateProtection();
+                showStatus('Right-click disabled', 'error');
+            }
+            return false;
+        }, true);
 
         // Google API Initialization
         function gapiLoaded() {
@@ -841,7 +1227,11 @@
                 
                 await renderPage(currentPage);
                 updateNavigation();
-                initializeProtection();
+                
+                // Start protection if not already active
+                if (!protectionActive) {
+                    initializeProtection();
+                }
             } catch (error) {
                 throw error;
             }
@@ -852,7 +1242,17 @@
 
             try {
                 const page = await currentPdf.getPage(pageNumber);
-                const viewport = page.getViewport({ scale: calculateScale() });
+                
+                // Calculate scale to fit width while maintaining aspect ratio
+                const containerWidth = elements.pdfViewer.clientWidth - 64; // Account for padding
+                const maxWidth = Math.min(containerWidth, 900); // Max width for readability
+                
+                // Get viewport at scale 1 to get dimensions
+                const viewport1 = page.getViewport({ scale: 1 });
+                const scale = maxWidth / viewport1.width;
+                
+                // Get final viewport with calculated scale
+                const viewport = page.getViewport({ scale: scale });
                 
                 const canvas = document.createElement('canvas');
                 const context = canvas.getContext('2d');
@@ -860,6 +1260,9 @@
                 canvas.height = viewport.height;
                 canvas.width = viewport.width;
                 canvas.className = 'pdf-canvas fade-in';
+                
+                // Disable image smoothing for sharper text
+                context.imageSmoothingEnabled = false;
                 
                 const renderContext = {
                     canvasContext: context,
@@ -871,19 +1274,45 @@
                 
                 elements.pdfContainer.innerHTML = '';
                 elements.pdfContainer.appendChild(canvas);
+                
+                // Scroll to top when changing pages
+                elements.pdfViewer.scrollTop = 0;
+                
+                // Add watermark overlay
+                addWatermark(canvas);
             } catch (error) {
                 showStatus('Failed to render page', 'error');
                 console.error('Page render error:', error);
             }
         }
 
-        function calculateScale() {
-            const containerWidth = elements.pdfViewer.clientWidth - 64; // Padding
-            const containerHeight = elements.pdfViewer.clientHeight - 64;
-            const maxWidth = Math.min(containerWidth, 900); // Max width for readability
+        function addWatermark(canvas) {
+            const watermarkCanvas = document.createElement('canvas');
+            watermarkCanvas.width = canvas.width;
+            watermarkCanvas.height = canvas.height;
+            watermarkCanvas.style.position = 'absolute';
+            watermarkCanvas.style.top = '0';
+            watermarkCanvas.style.left = '0';
+            watermarkCanvas.style.pointerEvents = 'none';
+            watermarkCanvas.style.opacity = '0.1';
             
-            // Calculate scale based on container size
-            return Math.min(scale, maxWidth / 595); // 595 is typical PDF width in points
+            const ctx = watermarkCanvas.getContext('2d');
+            ctx.font = '48px Arial';
+            ctx.fillStyle = 'red';
+            ctx.textAlign = 'center';
+            ctx.translate(watermarkCanvas.width / 2, watermarkCanvas.height / 2);
+            ctx.rotate(-45 * Math.PI / 180);
+            
+            const text = 'CONFIDENTIAL';
+            const lineHeight = 100;
+            for (let y = -watermarkCanvas.height; y < watermarkCanvas.height * 2; y += lineHeight) {
+                for (let x = -watermarkCanvas.width; x < watermarkCanvas.width * 2; x += 300) {
+                    ctx.fillText(text, x, y);
+                }
+            }
+            
+            canvas.parentElement.style.position = 'relative';
+            canvas.parentElement.appendChild(watermarkCanvas);
         }
 
         // Navigation
@@ -905,52 +1334,94 @@
             elements.nextBtn.disabled = currentPage === totalPages;
         }
 
-        // Protection System
+        // Enhanced Protection System
         function initializeProtection() {
-            if (!isProtected) return;
+            if (protectionActive) return;
+            protectionActive = true;
             
-            // Mouse events
-            elements.pdfViewer.addEventListener('mouseenter', activateProtection);
-            elements.pdfViewer.addEventListener('mouseleave', deactivateProtection);
+            // Start with protection active
+            activateProtection();
             
-            // Keyboard protection
-            document.addEventListener('keydown', handleKeyProtection);
+            // Mouse events for PDF viewer area
+            elements.pdfViewer.addEventListener('mouseenter', () => {
+                if (isProtected) activateProtection();
+            });
             
-            // Context menu protection
-            elements.pdfViewer.addEventListener('contextmenu', (e) => e.preventDefault());
+            elements.pdfViewer.addEventListener('mousemove', (e) => {
+                lastMouseMove = Date.now();
+                if (isProtected) {
+                    // Only deactivate briefly when actively moving mouse
+                    deactivateProtection();
+                    setTimeout(() => {
+                        if (Date.now() - lastMouseMove > 100) {
+                            activateProtection();
+                        }
+                    }, 150);
+                }
+            });
             
-            // Window focus protection
-            window.addEventListener('blur', activateProtection);
-            window.addEventListener('focus', deactivateProtection);
+            elements.pdfViewer.addEventListener('mouseleave', () => {
+                if (isProtected) activateProtection();
+            });
+            
+            // Header area allows mouse movement
+            elements.header.addEventListener('mouseenter', () => {
+                if (!isProtected) return;
+                deactivateProtection();
+            });
+            
+            elements.header.addEventListener('mouseleave', () => {
+                if (isProtected) activateProtection();
+            });
+            
+            // Window events
+            window.addEventListener('blur', () => {
+                if (isProtected) activateProtection();
+            });
+            
+            window.addEventListener('resize', () => {
+                if (isProtected) activateProtection();
+            });
+            
+            // Visibility change
+            document.addEventListener('visibilitychange', () => {
+                if (document.hidden && isProtected) {
+                    activateProtection();
+                }
+            });
+            
+            // Touch events for tablets
+            elements.pdfViewer.addEventListener('touchstart', (e) => {
+                if (isProtected) {
+                    e.preventDefault();
+                    activateProtection();
+                }
+            });
+            
+            // Scroll protection
+            elements.pdfViewer.addEventListener('scroll', () => {
+                if (isProtected) {
+                    // Allow scrolling but keep protection visible
+                    if (!elements.protectionOverlay.classList.contains('hidden')) {
+                        elements.protectionOverlay.style.top = elements.pdfViewer.scrollTop + 'px';
+                    }
+                }
+            });
+            
+            // Periodic check
+            setInterval(() => {
+                if (isProtected && Date.now() - lastMouseMove > 3000) {
+                    activateProtection();
+                }
+            }, 1000);
         }
 
         function activateProtection() {
-            if (!isProtected) return;
-            clearTimeout(protectionTimer);
-            elements.protectionOverlay.classList.add('active');
+            elements.protectionOverlay.classList.remove('hidden');
         }
 
         function deactivateProtection() {
-            if (!isProtected) return;
-            protectionTimer = setTimeout(() => {
-                elements.protectionOverlay.classList.remove('active');
-            }, 100);
-        }
-
-        function handleKeyProtection(e) {
-            if (!isProtected) return;
-            
-            // Prevent print
-            if ((e.ctrlKey || e.metaKey) && e.key === 'p') {
-                e.preventDefault();
-                showStatus('Printing is disabled for protected documents', 'error');
-            }
-            
-            // Prevent screenshots (limited effectiveness)
-            if (e.key === 'PrintScreen') {
-                e.preventDefault();
-                activateProtection();
-            }
+            elements.protectionOverlay.classList.add('hidden');
         }
 
         // Google Drive Upload
@@ -1034,29 +1505,31 @@
 
         function copyShareLink() {
             const link = elements.shareLink.textContent;
-            navigator.clipboard.writeText(link).then(() => {
-                showStatus('Link copied to clipboard!', 'success');
-                setTimeout(closeShareModal, 1500);
-            }).catch(() => {
-                // Fallback for older browsers
-                const textArea = document.createElement('textarea');
-                textArea.value = link;
-                textArea.style.position = 'fixed';
-                textArea.style.opacity = '0';
-                document.body.appendChild(textArea);
-                textArea.select();
+            
+            // Create temporary input to copy
+            const tempInput = document.createElement('input');
+            tempInput.style.position = 'fixed';
+            tempInput.style.opacity = '0';
+            tempInput.value = link;
+            document.body.appendChild(tempInput);
+            tempInput.select();
+            
+            try {
                 document.execCommand('copy');
-                document.body.removeChild(textArea);
                 showStatus('Link copied to clipboard!', 'success');
                 setTimeout(closeShareModal, 1500);
-            });
+            } catch (err) {
+                showStatus('Failed to copy link', 'error');
+            } finally {
+                document.body.removeChild(tempInput);
+            }
         }
 
         function closeShareModal() {
             elements.shareModal.classList.remove('active');
         }
 
-        // Encryption (using CryptoJS for better security)
+        // Encryption
         function encryptFileId(fileId) {
             return CryptoJS.AES.encrypt(fileId, CONFIG.ENCRYPTION_KEY).toString();
         }
@@ -1103,17 +1576,23 @@
                 
                 await loadPDF(typedArray);
                 
-                // Enable protection for shared documents
+                // Maximum protection for shared documents
                 isProtected = true;
+                protectionActive = true;
                 initializeProtection();
                 
-                // Disable controls for shared view
+                // Disable all controls for shared view
                 elements.fileInput.disabled = true;
                 elements.uploadBtn.disabled = true;
                 elements.shareBtn.disabled = true;
                 elements.fileInputLabel.style.display = 'none';
+                elements.uploadBtn.style.display = 'none';
+                elements.shareBtn.style.display = 'none';
                 
-                showStatus('Document loaded successfully', 'success');
+                showStatus('Document loaded - Protected Mode Active', 'success');
+                
+                // Start protection immediately
+                activateProtection();
             } catch (error) {
                 showStatus('Failed to load shared document', 'error');
                 console.error('Load error:', error);
@@ -1148,35 +1627,24 @@
             }
         }
 
-        // Keyboard Shortcuts
+        // Keyboard Shortcuts (limited for security)
         document.addEventListener('keydown', (e) => {
             if (!currentPdf || e.target.tagName === 'INPUT') return;
             
+            // Only allow basic navigation
             switch(e.key) {
                 case 'ArrowLeft':
                 case 'PageUp':
-                    e.preventDefault();
-                    navigatePage(-1);
+                    if (!isProtected || !e.ctrlKey) {
+                        e.preventDefault();
+                        navigatePage(-1);
+                    }
                     break;
                 case 'ArrowRight':
                 case 'PageDown':
-                    e.preventDefault();
-                    navigatePage(1);
-                    break;
-                case 'Home':
-                    e.preventDefault();
-                    if (currentPage !== 1) {
-                        currentPage = 1;
-                        renderPage(currentPage);
-                        updateNavigation();
-                    }
-                    break;
-                case 'End':
-                    e.preventDefault();
-                    if (currentPage !== totalPages) {
-                        currentPage = totalPages;
-                        renderPage(currentPage);
-                        updateNavigation();
+                    if (!isProtected || !e.ctrlKey) {
+                        e.preventDefault();
+                        navigatePage(1);
                     }
                     break;
             }
@@ -1185,6 +1653,12 @@
         // Responsive Handling
         let resizeTimer;
         window.addEventListener('resize', () => {
+            // Check if still desktop
+            if (detectMobile()) {
+                document.getElementById('mobileBlocker').classList.add('active');
+                return;
+            }
+            
             clearTimeout(resizeTimer);
             resizeTimer = setTimeout(() => {
                 if (currentPdf) {
@@ -1200,11 +1674,67 @@
             }
         });
 
-        // Initialize
+        // Additional Security Measures
+        
+        // Disable save dialog
+        window.addEventListener('beforeunload', (e) => {
+            if (isProtected) {
+                e.preventDefault();
+                e.returnValue = '';
+            }
+        });
+
+        // Clear clipboard periodically when protected
+        setInterval(() => {
+            if (isProtected && document.hasFocus()) {
+                try {
+                    navigator.clipboard.writeText('');
+                } catch (e) {
+                    // Clipboard API might not be available
+                }
+            }
+        }, 5000);
+
+        // Prevent screenshot extensions
+        document.addEventListener('DOMContentLoaded', () => {
+            const style = document.createElement('style');
+            style.textContent = `
+                @media screen {
+                    body {
+                        filter: brightness(1);
+                    }
+                }
+                @media print {
+                    body {
+                        display: none !important;
+                    }
+                }
+            `;
+            document.head.appendChild(style);
+        });
+
+        // Initialize on load
         window.addEventListener('load', () => {
+            // Final mobile check
+            if (detectMobile()) {
+                return;
+            }
+            
             gapiLoaded();
             gisLoaded();
+            
+            // Start protection system
+            initializeProtection();
         });
+
+        // Prevent viewing page source
+        document.onkeydown = function(e) {
+            if (e.keyCode == 123) return false; // F12
+            if (e.ctrlKey && e.shiftKey && e.keyCode == 'I'.charCodeAt(0)) return false;
+            if (e.ctrlKey && e.shiftKey && e.keyCode == 'C'.charCodeAt(0)) return false;
+            if (e.ctrlKey && e.shiftKey && e.keyCode == 'J'.charCodeAt(0)) return false;
+            if (e.ctrlKey && e.keyCode == 'U'.charCodeAt(0)) return false;
+        };
     </script>
 </body>
 </html>
