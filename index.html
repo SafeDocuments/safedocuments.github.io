@@ -903,3 +903,147 @@
         // Window events
         window.addEventListener('resize', function() {
             if (currentPdf) {
+                calculateFitScale().then(() => {
+                    scale = fitToPageScale * (currentZoom / 100);
+                    renderPage(currentPage);
+                });
+            }
+        });
+
+        window.addEventListener('blur', startProtection);
+        window.addEventListener('focus', stopProtection);
+
+        // Load PDF from Google Drive
+        async function loadPDFFromGoogleDrive(fileId) {
+            try {
+                showLoading(true);
+                const response = await fetch(`https://www.googleapis.com/drive/v3/files/${fileId}?alt=media&key=${API_KEY}`);
+
+                if (!response.ok) {
+                    throw new Error('Failed to fetch file from Google Drive');
+                }
+
+                const blob = await response.blob();
+                const arrayBuffer = await blob.arrayBuffer();
+                const typedarray = new Uint8Array(arrayBuffer);
+                pdfjsLib.getDocument(typedarray).promise.then(loadPDF).catch(err => {
+                    showError('Error loading PDF', err);
+                    showLoading(false);
+                });
+            } catch (error) {
+                showError('Error loading PDF from Google Drive', error);
+                showLoading(false);
+            }
+        }
+
+        // Check for file ID in URL
+        async function checkFileIdInURL() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const encryptedFileId = urlParams.get('fileId');
+            if (encryptedFileId) {
+                try {
+                    const fileId = decrypt(decodeURIComponent(encryptedFileId));
+                    showStatus('Loading shared file...', 'info');
+                    await loadPDFFromGoogleDrive(fileId);
+                    startProtection();
+                    disableControls();
+                } catch (error) {
+                    showError('Error decrypting file ID', error);
+                }
+            }
+        }
+
+        function disableControls() {
+            fileInput.disabled = true;
+            uploadButton.disabled = true;
+            generateLinkButton.disabled = true;
+            document.getElementById('fileInputLabel').style.opacity = '0.5';
+            document.getElementById('fileInputLabel').style.cursor = 'not-allowed';
+        }
+
+        // Mobile detection and handling
+        function isMobile() {
+            const userAgent = navigator.userAgent || navigator.vendor || window.opera;
+            return /android|iPad|iPhone|iPod/.test(userAgent) && !window.MSStream;
+        }
+
+        function handleMobileRedirect() {
+            if (isMobile()) {
+                document.body.innerHTML = `
+                    <div style="display: flex; align-items: center; justify-content: center; height: 100vh; text-align: center; background-color: #0f0f0f; color: #f7f7f7; padding: 20px;">
+                        <div>
+                            <h1 style="font-size: 48px; margin-bottom: 20px;">🚫</h1>
+                            <h2 style="font-size: 28px; margin-bottom: 15px;">Access Denied</h2>
+                            <p style="font-size: 18px; opacity: 0.8; max-width: 400px;">This content is not accessible on mobile devices. Please use a desktop or laptop computer for security reasons.</p>
+                        </div>
+                    </div>
+                `;
+            }
+        }
+
+        // Keyboard navigation
+        document.addEventListener('keydown', function(e) {
+            if (e.target.tagName !== 'INPUT' && !e.ctrlKey && !e.metaKey) {
+                switch(e.key) {
+                    case 'ArrowLeft':
+                        if (currentPage > 1) {
+                            e.preventDefault();
+                            prevButton.click();
+                        }
+                        break;
+                    case 'ArrowRight':
+                        if (currentPage < totalPages) {
+                            e.preventDefault();
+                            nextButton.click();
+                        }
+                        break;
+                    case 'ArrowUp':
+                        e.preventDefault();
+                        pdfContent.scrollTop -= 50;
+                        break;
+                    case 'ArrowDown':
+                        e.preventDefault();
+                        pdfContent.scrollTop += 50;
+                        break;
+                    case '+':
+                    case '=':
+                        e.preventDefault();
+                        zoomInButton.click();
+                        break;
+                    case '-':
+                    case '_':
+                        e.preventDefault();
+                        zoomOutButton.click();
+                        break;
+                    case '0':
+                        e.preventDefault();
+                        fitButton.click();
+                        break;
+                }
+            }
+        });
+
+        // Mouse wheel zoom
+        pdfContent.addEventListener('wheel', function(e) {
+            if (e.ctrlKey || e.metaKey) {
+                e.preventDefault();
+                if (e.deltaY < 0) {
+                    zoomInButton.click();
+                } else {
+                    zoomOutButton.click();
+                }
+            }
+        }, { passive: false });
+
+        // Initialize protection and mobile check
+        handleMobileRedirect();
+        startProtection();
+        
+        // Initialize GAPI
+        gapiLoaded();
+        gisLoaded();
+    </script>
+    <script async defer src="https://apis.google.com/js/api.js" onload="gapiLoaded()"></script>
+    <script async defer src="https://accounts.google.com/gsi/client" onload="gisLoaded()"></script>
+</body>
+</html>
