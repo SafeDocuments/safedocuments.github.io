@@ -186,10 +186,10 @@
             width: 100%;
             height: 100%;
             display: flex;
-            justify-content: flex-start;
-            align-items: flex-start;
+            justify-content: center;
+            align-items: center;
             overflow: auto;
-            padding: 20px;
+            padding: 0;
         }
         
         #pdf-canvas-container {
@@ -200,6 +200,7 @@
             display: flex;
             justify-content: center;
             align-items: center;
+            margin: 20px;
         }
         
         canvas {
@@ -650,31 +651,54 @@
             }
         });
 
-        // Zoom controls with center-point zooming
+        // Zoom controls with better positioning
         zoomInButton.addEventListener('click', () => {
             if (currentZoom < 200) {
+                // Store center point before zoom
+                const centerX = pdfContent.scrollLeft + (pdfContent.clientWidth / 2);
+                const centerY = pdfContent.scrollTop + (pdfContent.clientHeight / 2);
+                const prevWidth = pdfContent.scrollWidth;
+                const prevHeight = pdfContent.scrollHeight;
+                
                 currentZoom += 25;
                 scale = fitToPageScale * (currentZoom / 100);
                 zoomLevel.textContent = `${currentZoom}%`;
                 
                 renderPage(currentPage).then(() => {
-                    // Ensure content is scrollable after zoom
-                    if (currentZoom > 100) {
-                        // Scroll to top-left to ensure all directions are navigable
-                        pdfContent.scrollTop = 50;
-                        pdfContent.scrollLeft = 50;
-                    }
+                    // Maintain center point after zoom
+                    const newWidth = pdfContent.scrollWidth;
+                    const newHeight = pdfContent.scrollHeight;
+                    const scaleFactorX = newWidth / prevWidth;
+                    const scaleFactorY = newHeight / prevHeight;
+                    
+                    pdfContent.scrollLeft = (centerX * scaleFactorX) - (pdfContent.clientWidth / 2);
+                    pdfContent.scrollTop = (centerY * scaleFactorY) - (pdfContent.clientHeight / 2);
                 });
             }
         });
 
         zoomOutButton.addEventListener('click', () => {
             if (currentZoom > 50) {
+                // Store center point before zoom
+                const centerX = pdfContent.scrollLeft + (pdfContent.clientWidth / 2);
+                const centerY = pdfContent.scrollTop + (pdfContent.clientHeight / 2);
+                const prevWidth = pdfContent.scrollWidth;
+                const prevHeight = pdfContent.scrollHeight;
+                
                 currentZoom -= 25;
                 scale = fitToPageScale * (currentZoom / 100);
                 zoomLevel.textContent = `${currentZoom}%`;
                 
-                renderPage(currentPage);
+                renderPage(currentPage).then(() => {
+                    // Maintain center point after zoom
+                    const newWidth = pdfContent.scrollWidth;
+                    const newHeight = pdfContent.scrollHeight;
+                    const scaleFactorX = newWidth / prevWidth;
+                    const scaleFactorY = newHeight / prevHeight;
+                    
+                    pdfContent.scrollLeft = Math.max(0, (centerX * scaleFactorX) - (pdfContent.clientWidth / 2));
+                    pdfContent.scrollTop = Math.max(0, (centerY * scaleFactorY) - (pdfContent.clientHeight / 2));
+                });
             }
         });
 
@@ -683,7 +707,7 @@
             scale = fitToPageScale;
             zoomLevel.textContent = '100%';
             renderPage(currentPage).then(() => {
-                // Reset scroll position
+                // Center the page if it's smaller than the container
                 pdfContent.scrollTop = 0;
                 pdfContent.scrollLeft = 0;
             });
@@ -840,6 +864,15 @@
             // Generate thumbnails
             generateThumbnails();
             
+            // Force a resize calculation after initial render
+            setTimeout(() => {
+                calculateFitScale().then(() => {
+                    if (currentZoom === 100) {
+                        renderPage(currentPage);
+                    }
+                });
+            }, 100);
+            
             startProtection();
             showLoading(false);
         }
@@ -847,13 +880,22 @@
         async function calculateFitScale() {
             const page = await currentPdf.getPage(1);
             const viewport = page.getViewport({ scale: 1 });
-            const containerWidth = pdfContent.clientWidth - 40;
-            const containerHeight = pdfContent.clientHeight - 40;
             
+            // Get the actual viewer dimensions
+            const containerWidth = pdfContent.clientWidth - 40; // Account for margins
+            const containerHeight = pdfContent.clientHeight - 40; // Account for margins
+            
+            // Calculate scale to fit width and height
             const scaleX = containerWidth / viewport.width;
             const scaleY = containerHeight / viewport.height;
             
-            fitToPageScale = Math.min(scaleX, scaleY, 2);
+            // Use the scale that fits both dimensions
+            fitToPageScale = Math.min(scaleX, scaleY);
+            
+            // Ensure we're using a reasonable scale
+            if (fitToPageScale > 3) fitToPageScale = 3; // Max scale of 3x
+            if (fitToPageScale < 0.5) fitToPageScale = 0.5; // Min scale of 0.5x
+            
             scale = fitToPageScale;
         }
 
