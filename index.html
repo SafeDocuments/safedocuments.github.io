@@ -52,12 +52,39 @@
             border-radius: 12px;
             margin-bottom: 15px;
             box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+            flex-wrap: wrap;
+            gap: 15px;
         }
         
         .controls-left, .controls-center, .controls-right {
             display: flex;
             align-items: center;
             gap: 10px;
+        }
+        
+        .controls-center {
+            flex-grow: 1;
+            justify-content: center;
+            gap: 20px;
+        }
+        
+        .controls-right {
+            font-size: 14px;
+            opacity: 0.8;
+        }
+        
+        /* Hide upload controls for shared links */
+        body.shared-view .controls-left {
+            display: none;
+        }
+        
+        body.shared-view #sidebar {
+            display: none;
+        }
+        
+        body.shared-view .controls-center {
+            justify-content: flex-start;
+            margin-left: 20px;
         }
         
         #fileInput {
@@ -257,6 +284,11 @@
             z-index: 100;
         }
         
+        body.shared-view #pan-controls {
+            bottom: 20px;
+            right: 20px;
+        }
+        
         .pan-row {
             display: flex;
             gap: 5px;
@@ -407,6 +439,16 @@
             #sidebar {
                 width: 140px;
             }
+            
+            #top-bar {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            
+            .controls-center {
+                margin-left: 0;
+                justify-content: center;
+            }
         }
         
         @media (max-width: 768px) {
@@ -416,6 +458,15 @@
             
             .controls-left, .controls-center, .controls-right {
                 flex-wrap: wrap;
+                justify-content: center;
+            }
+            
+            #navigation, #zoom-controls {
+                flex-wrap: nowrap;
+            }
+            
+            body.shared-view .controls-center {
+                margin-left: 0;
             }
         }
         
@@ -456,14 +507,17 @@
                     <span id="page-num">Page 0 of 0</span>
                     <button class="nav-button" id="next">▶</button>
                 </div>
+                
+                <div id="zoom-controls">
+                    <button class="zoom-button" id="zoom-out">−</button>
+                    <span id="zoom-level">100%</span>
+                    <button class="zoom-button" id="zoom-in">+</button>
+                    <button id="fit-button">Fit</button>
+                </div>
             </div>
             
             <div class="controls-right">
-                <div id="navigation">
-                    <button class="nav-button" id="prev">◀</button>
-                    <span id="page-num">Page 0 of 0</span>
-                    <button class="nav-button" id="next">▶</button>
-                </div>
+                <span id="document-name"></span>
             </div>
         </div>
         
@@ -478,12 +532,6 @@
                 <div id="protection-overlay">
                     <div class="protection-text">PROTECTED CONTENT</div>
                     <div class="protection-subtext">Move cursor away to view</div>
-                </div>
-                <div id="zoom-controls">
-                    <button class="zoom-button" id="zoom-out">−</button>
-                    <span id="zoom-level">100%</span>
-                    <button class="zoom-button" id="zoom-in">+</button>
-                    <button id="fit-button">Fit</button>
                 </div>
                 <div id="pan-controls">
                     <div class="pan-row">
@@ -529,6 +577,7 @@
         let currentPage = 1;
         let totalPages = 0;
         let currentFileId = null;
+        let currentFileName = '';
         let scale = 1.5;
         let currentZoom = 100;
         let fitToPageScale = 1.5;
@@ -554,6 +603,7 @@
         const fitButton = document.getElementById('fit-button');
         const sidebar = document.getElementById('sidebar');
         const loadingSpinner = document.querySelector('.loading-spinner');
+        const documentNameEl = document.getElementById('document-name');
 
         // Initialize PDF.js
         pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.9.359/pdf.worker.min.js';
@@ -600,6 +650,8 @@
             uploadButton.disabled = false;
             const file = fileInput.files[0];
             if (file) {
+                currentFileName = file.name;
+                document.getElementById('document-name').textContent = currentFileName;
                 loadPDFFromFile(file);
             }
         });
@@ -1002,80 +1054,81 @@
         document.getElementById('pan-controls').addEventListener('mouseover', stopProtection);
         document.getElementById('pan-controls').addEventListener('mouseleave', startProtection);
 
-        // Zoom controls protection bypass
-        document.getElementById('zoom-controls').addEventListener('mouseover', stopProtection);
-        document.getElementById('zoom-controls').addEventListener('mouseleave', startProtection);
-
         // Keyboard protection - Enhanced with all original protections
         document.addEventListener('keydown', function(e) {
             // Always start protection first for any key press
             startProtection();
             
             // Print protection
-            if (e.ctrlKey && e.key === 'p') {
+            if ((e.ctrlKey || e.metaKey) && e.key === 'p') {
                 e.preventDefault();
-                return;
+                return false;
             }
             
             // PrintScreen protection
             if (e.key === 'PrintScreen') {
                 e.preventDefault();
-                return;
+                return false;
             }
             
             // Save protection
-            if (e.ctrlKey && e.key === 's') {
+            if ((e.ctrlKey || e.metaKey) && e.key === 's') {
                 e.preventDefault();
-                return;
+                return false;
             }
             
             // Select all protection
-            if (e.ctrlKey && e.key === 'a') {
+            if ((e.ctrlKey || e.metaKey) && e.key === 'a') {
                 e.preventDefault();
-                return;
+                return false;
             }
             
             // Copy protection
-            if (e.ctrlKey && e.key === 'c') {
+            if ((e.ctrlKey || e.metaKey) && e.key === 'c') {
                 e.preventDefault();
-                return;
+                return false;
             }
             
             // F12 DevTools protection
             if (e.key === 'F12') {
                 e.preventDefault();
-                return;
+                return false;
             }
             
             // Ctrl+Shift+I DevTools protection
-            if (e.ctrlKey && e.shiftKey && e.key === 'I') {
+            if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key === 'I') {
                 e.preventDefault();
-                return;
+                return false;
             }
             
             // Ctrl+Shift+J Console protection
-            if (e.ctrlKey && e.shiftKey && e.key === 'J') {
+            if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key === 'J') {
                 e.preventDefault();
-                return;
+                return false;
             }
             
             // Ctrl+Shift+C Element Inspector protection
-            if (e.ctrlKey && e.shiftKey && e.key === 'C') {
+            if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key === 'C') {
                 e.preventDefault();
-                return;
+                return false;
             }
             
             // Enter key protection (original)
             if (e.key === 'Enter') {
                 e.preventDefault();
-                return;
+                return false;
             }
+            
+            // Prevent ALL other keys
+            e.preventDefault();
+            return false;
         });
 
         document.addEventListener('keyup', function(e) {
-            if (e.key === 'Enter') {
-                startProtection();
-            }
+            // Maintain protection on keyup
+            startProtection();
+            e.preventDefault();
+            return false;
         });
 
         // Context menu protection
@@ -1150,6 +1203,9 @@
                     throw new Error('Failed to fetch file from Google Drive');
                 }
 
+                // Set document name for shared files
+                document.getElementById('document-name').textContent = 'Protected Document';
+
                 const blob = await response.blob();
                 const arrayBuffer = await blob.arrayBuffer();
                 const typedarray = new Uint8Array(arrayBuffer);
@@ -1181,11 +1237,16 @@
         }
 
         function disableControls() {
+            // Add shared view class to body
+            document.body.classList.add('shared-view');
+            
+            // Disable file controls
             fileInput.disabled = true;
             uploadButton.disabled = true;
             generateLinkButton.disabled = true;
-            document.getElementById('fileInputLabel').style.opacity = '0.5';
-            document.getElementById('fileInputLabel').style.cursor = 'not-allowed';
+            document.getElementById('fileInputLabel').style.display = 'none';
+            uploadButton.style.display = 'none';
+            generateLinkButton.style.display = 'none';
         }
 
         // Mobile detection and handling
