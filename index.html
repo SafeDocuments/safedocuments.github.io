@@ -196,10 +196,7 @@
             position: relative;
             box-shadow: 0 0 20px rgba(0,0,0,0.5);
             border-radius: 8px;
-            overflow: visible;
-            display: flex;
-            justify-content: center;
-            align-items: center;
+            overflow: hidden;
         }
         
         canvas {
@@ -272,35 +269,56 @@
             border-radius: 8px;
         }
         
-        /* Pan Controls in Header */
-        #pan-controls-header {
+        /* Pan Controls */
+        #pan-controls {
+            position: absolute;
+            bottom: 20px;
+            right: 20px;
             display: flex;
+            flex-direction: column;
             gap: 5px;
-            background: rgba(40,40,40,0.9);
-            padding: 8px;
+            background: rgba(40,40,40,0.95);
+            padding: 10px;
             border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+            z-index: 100;
         }
         
-        .pan-button-small {
-            width: 32px;
-            height: 32px;
+        body.shared-view #pan-controls {
+            bottom: 20px;
+            right: 20px;
+        }
+        
+        .pan-row {
+            display: flex;
+            gap: 5px;
+            justify-content: center;
+        }
+        
+        .pan-button {
+            width: 40px;
+            height: 40px;
             padding: 0;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 16px;
+            font-size: 18px;
             background: rgba(60,60,60,0.9);
             border: 1px solid rgba(100,100,100,0.3);
             cursor: pointer;
             transition: all 0.2s ease;
         }
         
-        .pan-button-small:hover {
+        .pan-button:hover {
             background: rgba(80,80,80,0.9);
         }
         
-        .pan-button-small:active {
+        .pan-button:active {
             transform: scale(0.95);
+        }
+        
+        #pan-center {
+            font-size: 14px;
         }
         
         #zoom-level {
@@ -496,13 +514,6 @@
                     <button class="zoom-button" id="zoom-in">+</button>
                     <button id="fit-button">Fit</button>
                 </div>
-                
-                <div id="pan-controls-header">
-                    <button class="pan-button-small" id="pan-up">↑</button>
-                    <button class="pan-button-small" id="pan-down">↓</button>
-                    <button class="pan-button-small" id="pan-left">←</button>
-                    <button class="pan-button-small" id="pan-right">→</button>
-                </div>
             </div>
             
             <div class="controls-right">
@@ -521,6 +532,19 @@
                 <div id="protection-overlay">
                     <div class="protection-text">PROTECTED CONTENT</div>
                     <div class="protection-subtext">Move cursor away to view</div>
+                </div>
+                <div id="pan-controls">
+                    <div class="pan-row">
+                        <button class="pan-button" id="pan-up">↑</button>
+                    </div>
+                    <div class="pan-row">
+                        <button class="pan-button" id="pan-left">←</button>
+                        <button class="pan-button" id="pan-center">◎</button>
+                        <button class="pan-button" id="pan-right">→</button>
+                    </div>
+                    <div class="pan-row">
+                        <button class="pan-button" id="pan-down">↓</button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -987,26 +1011,33 @@
         const panDown = document.getElementById('pan-down');
         const panLeft = document.getElementById('pan-left');
         const panRight = document.getElementById('pan-right');
-        const panAmount = 150; // Increased for better navigation
+        const panCenter = document.getElementById('pan-center');
+        const panAmount = 100;
 
         panUp.addEventListener('click', (e) => {
             e.stopPropagation();
-            pdfContent.scrollBy({ top: -panAmount, behavior: 'smooth' });
+            pdfContent.scrollTop -= panAmount;
         });
 
         panDown.addEventListener('click', (e) => {
             e.stopPropagation();
-            pdfContent.scrollBy({ top: panAmount, behavior: 'smooth' });
+            pdfContent.scrollTop += panAmount;
         });
 
         panLeft.addEventListener('click', (e) => {
             e.stopPropagation();
-            pdfContent.scrollBy({ left: -panAmount, behavior: 'smooth' });
+            pdfContent.scrollLeft -= panAmount;
         });
 
         panRight.addEventListener('click', (e) => {
             e.stopPropagation();
-            pdfContent.scrollBy({ left: panAmount, behavior: 'smooth' });
+            pdfContent.scrollLeft += panAmount;
+        });
+
+        panCenter.addEventListener('click', (e) => {
+            e.stopPropagation();
+            pdfContent.scrollTop = (pdfContent.scrollHeight - pdfContent.clientHeight) / 2;
+            pdfContent.scrollLeft = (pdfContent.scrollWidth - pdfContent.clientWidth) / 2;
         });
 
         // Protection event listeners
@@ -1018,6 +1049,10 @@
 
         sidebar.addEventListener('mouseover', stopProtection);
         sidebar.addEventListener('mouseleave', startProtection);
+
+        // Pan controls protection bypass
+        document.getElementById('pan-controls').addEventListener('mouseover', stopProtection);
+        document.getElementById('pan-controls').addEventListener('mouseleave', startProtection);
 
         // Keyboard protection - Enhanced with all original protections
         document.addEventListener('keydown', function(e) {
