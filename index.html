@@ -1024,11 +1024,14 @@
         const panRight = document.getElementById('pan-right');
         const panAmount = 150; // Increased for better navigation
 
-panUp.addEventListener('click', (e) => {
+        panUp.addEventListener('click', (e) => {
     e.stopPropagation();
     e.preventDefault();
     if (pdfContent.scrollHeight <= pdfContent.clientHeight) return; // no scroll possible
-    pdfContent.scrollTo({ top: 0, behavior: 'smooth' });
+    pdfContent.scrollTop = 0; // Direct scroll to top
+    setTimeout(() => {
+        pdfContent.scrollTop = 0; // Ensure scroll position after render
+    }, 100);
 });
         panDown.addEventListener('click', (e) => {
             e.stopPropagation();
