@@ -52,23 +52,28 @@
             border-radius: 12px;
             margin-bottom: 15px;
             box-shadow: 0 4px 6px rgba(0,0,0,0.3);
-            flex-wrap: wrap;
-            gap: 15px;
+            min-height: 70px;
         }
         
         .controls-left, .controls-center, .controls-right {
             display: flex;
             align-items: center;
             gap: 10px;
+            flex: 1;
+        }
+        
+        .controls-left {
+            justify-content: flex-start;
         }
         
         .controls-center {
-            flex-grow: 1;
             justify-content: center;
             gap: 20px;
+            flex: 2;
         }
         
         .controls-right {
+            justify-content: flex-end;
             font-size: 14px;
             opacity: 0.8;
         }
@@ -83,8 +88,8 @@
         }
         
         body.shared-view .controls-center {
-            justify-content: flex-start;
-            margin-left: 20px;
+            justify-content: center;
+            margin-left: 0;
         }
         
         #fileInput {
@@ -102,6 +107,7 @@
             font-size: 14px;
             transition: all 0.3s ease;
             box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+            white-space: nowrap;
         }
         
         #fileInputLabel:hover, button:hover:not(:disabled) {
@@ -116,12 +122,40 @@
             opacity: 0.6;
         }
         
+        /* Toggle Sidebar Button */
+        #toggleSidebarButton {
+            position: absolute;
+            left: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 30px;
+            height: 60px;
+            background: rgba(40,40,40,0.9);
+            border: 1px solid rgba(100,100,100,0.3);
+            border-radius: 0 8px 8px 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            z-index: 100;
+            transition: all 0.3s ease;
+        }
+        
+        #toggleSidebarButton:hover {
+            background: rgba(60,60,60,0.9);
+        }
+        
+        #toggleSidebarButton.sidebar-hidden {
+            left: 0;
+        }
+        
         /* Enhanced PDF Viewer Container */
         .pdf-container {
             flex-grow: 1;
             display: flex;
             gap: 15px;
             overflow: hidden;
+            position: relative;
         }
         
         /* Sidebar for thumbnails */
@@ -133,6 +167,11 @@
             overflow-y: auto;
             overflow-x: hidden;
             box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+            transition: margin-left 0.3s ease;
+        }
+        
+        #sidebar.hidden {
+            margin-left: -195px;
         }
         
         .thumbnail {
@@ -197,10 +236,8 @@
             box-shadow: 0 0 20px rgba(0,0,0,0.5);
             border-radius: 8px;
             overflow: visible;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            margin: 20px;
+            display: inline-block;
+            margin: 20px auto;
         }
         
         canvas {
@@ -418,34 +455,40 @@
         }
         
         /* Responsive adjustments */
-        @media (max-width: 1024px) {
-            #sidebar {
-                width: 140px;
+        @media (max-width: 1200px) {
+            #top-bar {
+                flex-wrap: wrap;
+                gap: 10px;
             }
             
-            #top-bar {
-                flex-direction: column;
-                align-items: stretch;
+            .controls-left, .controls-center, .controls-right {
+                width: 100%;
             }
             
             .controls-center {
-                margin-left: 0;
+                order: 3;
+                justify-content: space-around;
+                flex-wrap: wrap;
+                gap: 10px;
+            }
+            
+            .controls-right {
+                order: 2;
                 justify-content: center;
             }
         }
         
         @media (max-width: 768px) {
             #sidebar {
-                display: none;
+                width: 140px;
             }
             
-            .controls-left, .controls-center, .controls-right {
-                flex-wrap: wrap;
-                justify-content: center;
+            #sidebar.hidden {
+                margin-left: -155px;
             }
             
-            #navigation, #zoom-controls {
-                flex-wrap: nowrap;
+            .controls-center > div {
+                transform: scale(0.9);
             }
             
             body.shared-view .controls-center {
@@ -512,6 +555,7 @@
         </div>
         
         <div class="pdf-container">
+            <button id="toggleSidebarButton" title="Toggle Thumbnails">◀</button>
             <div id="sidebar"></div>
             <div id="pdf-viewer">
                 <div id="pdf-content">
@@ -558,6 +602,7 @@
         let scale = 1.5;
         let currentZoom = 100;
         let fitToPageScale = 1.5;
+        let sidebarVisible = true;
         
         // DOM elements
         const uploadButton = document.getElementById('uploadButton');
@@ -581,9 +626,24 @@
         const sidebar = document.getElementById('sidebar');
         const loadingSpinner = document.querySelector('.loading-spinner');
         const documentNameEl = document.getElementById('document-name');
+        const toggleSidebarButton = document.getElementById('toggleSidebarButton');
 
         // Initialize PDF.js
         pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.9.359/pdf.worker.min.js';
+
+        // Toggle sidebar
+        toggleSidebarButton.addEventListener('click', () => {
+            sidebarVisible = !sidebarVisible;
+            if (sidebarVisible) {
+                sidebar.classList.remove('hidden');
+                toggleSidebarButton.classList.remove('sidebar-hidden');
+                toggleSidebarButton.innerHTML = '◀';
+            } else {
+                sidebar.classList.add('hidden');
+                toggleSidebarButton.classList.add('sidebar-hidden');
+                toggleSidebarButton.innerHTML = '▶';
+            }
+        });
 
         // GAPI initialization
         function gapiLoaded() {
@@ -651,86 +711,108 @@
             }
         });
 
-        // Fixed zoom controls with proper scroll position maintenance
-        zoomInButton.addEventListener('click', () => {
+        // Fixed zoom controls
+        zoomInButton.addEventListener('click', async () => {
             if (currentZoom < 200) {
-                // Get the current center point of the viewport relative to the content
-                const scrollCenterX = pdfContent.scrollLeft + (pdfContent.clientWidth / 2);
-                const scrollCenterY = pdfContent.scrollTop + (pdfContent.clientHeight / 2);
+                // Save current viewport center
+                const viewportCenterX = pdfContent.scrollLeft + (pdfContent.clientWidth / 2);
+                const viewportCenterY = pdfContent.scrollTop + (pdfContent.clientHeight / 2);
                 
-                // Get the current canvas dimensions
-                const currentCanvas = pdfCanvasContainer.querySelector('canvas');
-                const oldWidth = currentCanvas ? currentCanvas.style.width : '0px';
-                const oldHeight = currentCanvas ? currentCanvas.style.height : '0px';
+                // Get current content dimensions
+                const oldContentWidth = pdfContent.scrollWidth;
+                const oldContentHeight = pdfContent.scrollHeight;
                 
-                // Calculate relative position (0-1)
-                const relativeX = scrollCenterX / pdfContent.scrollWidth;
-                const relativeY = scrollCenterY / pdfContent.scrollHeight;
+                // Calculate relative center position
+                const relativeCenterX = viewportCenterX / oldContentWidth;
+                const relativeCenterY = viewportCenterY / oldContentHeight;
                 
+                // Update zoom
                 currentZoom = Math.min(200, currentZoom + 25);
                 scale = fitToPageScale * (currentZoom / 100);
                 zoomLevel.textContent = `${currentZoom}%`;
                 
-                renderPage(currentPage).then(() => {
-                    // Wait for the DOM to update
-                    setTimeout(() => {
-                        // Calculate new scroll position based on the new content size
-                        const newScrollWidth = pdfContent.scrollWidth;
-                        const newScrollHeight = pdfContent.scrollHeight;
-                        
-                        // Set scroll to maintain the same relative center
-                        pdfContent.scrollLeft = Math.max(0, (newScrollWidth * relativeX) - (pdfContent.clientWidth / 2));
-                        pdfContent.scrollTop = Math.max(0, (newScrollHeight * relativeY) - (pdfContent.clientHeight / 2));
-                    }, 10);
-                });
+                // Render and wait for completion
+                await renderPage(currentPage);
+                
+                // Force layout recalculation
+                await new Promise(resolve => requestAnimationFrame(resolve));
+                
+                // Get new content dimensions
+                const newContentWidth = pdfContent.scrollWidth;
+                const newContentHeight = pdfContent.scrollHeight;
+                
+                // Calculate new scroll position to maintain center
+                const newViewportCenterX = newContentWidth * relativeCenterX;
+                const newViewportCenterY = newContentHeight * relativeCenterY;
+                
+                pdfContent.scrollLeft = Math.max(0, newViewportCenterX - (pdfContent.clientWidth / 2));
+                pdfContent.scrollTop = Math.max(0, newViewportCenterY - (pdfContent.clientHeight / 2));
             }
         });
 
-        zoomOutButton.addEventListener('click', () => {
+        zoomOutButton.addEventListener('click', async () => {
             if (currentZoom > 50) {
-                // Get the current center point of the viewport relative to the content
-                const scrollCenterX = pdfContent.scrollLeft + (pdfContent.clientWidth / 2);
-                const scrollCenterY = pdfContent.scrollTop + (pdfContent.clientHeight / 2);
+                // Save current viewport center
+                const viewportCenterX = pdfContent.scrollLeft + (pdfContent.clientWidth / 2);
+                const viewportCenterY = pdfContent.scrollTop + (pdfContent.clientHeight / 2);
                 
-                // Calculate relative position (0-1)
-                const relativeX = scrollCenterX / pdfContent.scrollWidth;
-                const relativeY = scrollCenterY / pdfContent.scrollHeight;
+                // Get current content dimensions
+                const oldContentWidth = pdfContent.scrollWidth;
+                const oldContentHeight = pdfContent.scrollHeight;
                 
+                // Calculate relative center position
+                const relativeCenterX = viewportCenterX / oldContentWidth;
+                const relativeCenterY = viewportCenterY / oldContentHeight;
+                
+                // Update zoom
                 currentZoom = Math.max(50, currentZoom - 25);
                 scale = fitToPageScale * (currentZoom / 100);
                 zoomLevel.textContent = `${currentZoom}%`;
                 
-                renderPage(currentPage).then(() => {
-                    // Wait for the DOM to update
-                    setTimeout(() => {
-                        // Calculate new scroll position based on the new content size
-                        const newScrollWidth = pdfContent.scrollWidth;
-                        const newScrollHeight = pdfContent.scrollHeight;
-                        
-                        // Set scroll to maintain the same relative center
-                        pdfContent.scrollLeft = Math.max(0, (newScrollWidth * relativeX) - (pdfContent.clientWidth / 2));
-                        pdfContent.scrollTop = Math.max(0, (newScrollHeight * relativeY) - (pdfContent.clientHeight / 2));
-                    }, 10);
-                });
+                // Render and wait for completion
+                await renderPage(currentPage);
+                
+                // Force layout recalculation
+                await new Promise(resolve => requestAnimationFrame(resolve));
+                
+                // Get new content dimensions
+                const newContentWidth = pdfContent.scrollWidth;
+                const newContentHeight = pdfContent.scrollHeight;
+                
+                // Calculate new scroll position to maintain center
+                const newViewportCenterX = newContentWidth * relativeCenterX;
+                const newViewportCenterY = newContentHeight * relativeCenterY;
+                
+                pdfContent.scrollLeft = Math.max(0, newViewportCenterX - (pdfContent.clientWidth / 2));
+                pdfContent.scrollTop = Math.max(0, newViewportCenterY - (pdfContent.clientHeight / 2));
             }
         });
 
-        fitButton.addEventListener('click', () => {
+        fitButton.addEventListener('click', async () => {
             currentZoom = 100;
             scale = fitToPageScale;
             zoomLevel.textContent = '100%';
-            renderPage(currentPage).then(() => {
-                // Center the page after fitting
-                setTimeout(() => {
-                    const containerWidth = pdfContent.clientWidth;
-                    const containerHeight = pdfContent.clientHeight;
-                    const canvasWidth = pdfContent.scrollWidth;
-                    const canvasHeight = pdfContent.scrollHeight;
-                    
-                    // Center horizontally and vertically
-                    pdfContent.scrollLeft = Math.max(0, (canvasWidth - containerWidth) / 2);
-                    pdfContent.scrollTop = Math.max(0, (canvasHeight - containerHeight) / 2);
-                }, 10);
+            
+            await renderPage(currentPage);
+            
+            // Center the page
+            requestAnimationFrame(() => {
+                const containerWidth = pdfContent.clientWidth;
+                const containerHeight = pdfContent.clientHeight;
+                const contentWidth = pdfCanvasContainer.offsetWidth + 40; // Include margins
+                const contentHeight = pdfCanvasContainer.offsetHeight + 40; // Include margins
+                
+                if (contentWidth < containerWidth) {
+                    pdfContent.scrollLeft = 0;
+                } else {
+                    pdfContent.scrollLeft = (contentWidth - containerWidth) / 2;
+                }
+                
+                if (contentHeight < containerHeight) {
+                    pdfContent.scrollTop = 0;
+                } else {
+                    pdfContent.scrollTop = (contentHeight - containerHeight) / 2;
+                }
             });
         });
 
@@ -875,8 +957,15 @@
             totalPages = pdf.numPages;
             currentPage = 1;
             
+            // Reset zoom
+            currentZoom = 100;
+            zoomLevel.textContent = '100%';
+            
             // Calculate fit scale
             await calculateFitScale();
+            
+            // Set initial scale
+            scale = fitToPageScale;
             
             // Render first page
             await renderPage(currentPage);
@@ -885,20 +974,33 @@
             // Generate thumbnails
             generateThumbnails();
             
-            // Force a resize calculation after initial render
-            setTimeout(() => {
-                calculateFitScale().then(() => {
-                    if (currentZoom === 100) {
-                        renderPage(currentPage);
-                    }
-                });
-            }, 100);
+            // Center the page after loading
+            requestAnimationFrame(() => {
+                const containerWidth = pdfContent.clientWidth;
+                const containerHeight = pdfContent.clientHeight;
+                const contentWidth = pdfCanvasContainer.offsetWidth + 40;
+                const contentHeight = pdfCanvasContainer.offsetHeight + 40;
+                
+                if (contentWidth < containerWidth) {
+                    pdfContent.scrollLeft = 0;
+                } else {
+                    pdfContent.scrollLeft = (contentWidth - containerWidth) / 2;
+                }
+                
+                if (contentHeight < containerHeight) {
+                    pdfContent.scrollTop = 0;
+                } else {
+                    pdfContent.scrollTop = (contentHeight - containerHeight) / 2;
+                }
+            });
             
             startProtection();
             showLoading(false);
         }
 
         async function calculateFitScale() {
+            if (!currentPdf) return;
+            
             const page = await currentPdf.getPage(1);
             const viewport = page.getViewport({ scale: 1 });
             
@@ -914,10 +1016,7 @@
             fitToPageScale = Math.min(scaleX, scaleY);
             
             // Ensure we're using a reasonable scale
-            if (fitToPageScale > 3) fitToPageScale = 3; // Max scale of 3x
-            if (fitToPageScale < 0.5) fitToPageScale = 0.5; // Min scale of 0.5x
-            
-            scale = fitToPageScale;
+            fitToPageScale = Math.max(0.3, Math.min(2, fitToPageScale));
         }
 
         async function renderPage(pageNumber) {
@@ -1038,41 +1137,47 @@
             protectionOverlay.style.display = 'none';
         }
 
-        // Fixed pan controls with incremental scrolling
+        // Fixed pan controls
         const panUp = document.getElementById('pan-up');
         const panDown = document.getElementById('pan-down');
         const panLeft = document.getElementById('pan-left');
         const panRight = document.getElementById('pan-right');
-        const panAmount = 100; // Amount to scroll each time
+        const panAmount = 150;
 
         panUp.addEventListener('click', (e) => {
-            e.stopPropagation();
             e.preventDefault();
-            const currentScroll = pdfContent.scrollTop;
-            pdfContent.scrollTop = Math.max(0, currentScroll - panAmount);
+            e.stopPropagation();
+            pdfContent.scrollBy({
+                top: -panAmount,
+                behavior: 'smooth'
+            });
         });
 
         panDown.addEventListener('click', (e) => {
-            e.stopPropagation();
             e.preventDefault();
-            const currentScroll = pdfContent.scrollTop;
-            const maxScroll = pdfContent.scrollHeight - pdfContent.clientHeight;
-            pdfContent.scrollTop = Math.min(maxScroll, currentScroll + panAmount);
+            e.stopPropagation();
+            pdfContent.scrollBy({
+                top: panAmount,
+                behavior: 'smooth'
+            });
         });
 
         panLeft.addEventListener('click', (e) => {
-            e.stopPropagation();
             e.preventDefault();
-            const currentScroll = pdfContent.scrollLeft;
-            pdfContent.scrollLeft = Math.max(0, currentScroll - panAmount);
+            e.stopPropagation();
+            pdfContent.scrollBy({
+                left: -panAmount,
+                behavior: 'smooth'
+            });
         });
 
         panRight.addEventListener('click', (e) => {
-            e.stopPropagation();
             e.preventDefault();
-            const currentScroll = pdfContent.scrollLeft;
-            const maxScroll = pdfContent.scrollWidth - pdfContent.clientWidth;
-            pdfContent.scrollLeft = Math.min(maxScroll, currentScroll + panAmount);
+            e.stopPropagation();
+            pdfContent.scrollBy({
+                left: panAmount,
+                behavior: 'smooth'
+            });
         });
 
         // Protection event listeners
@@ -1084,6 +1189,9 @@
 
         sidebar.addEventListener('mouseover', stopProtection);
         sidebar.addEventListener('mouseleave', startProtection);
+
+        toggleSidebarButton.addEventListener('mouseover', stopProtection);
+        toggleSidebarButton.addEventListener('mouseleave', startProtection);
 
         // Keyboard protection - Enhanced with all original protections
         document.addEventListener('keydown', function(e) {
@@ -1195,12 +1303,11 @@
         });
 
         // Window events
-        window.addEventListener('resize', function() {
+        window.addEventListener('resize', async function() {
             if (currentPdf) {
-                calculateFitScale().then(() => {
-                    scale = fitToPageScale * (currentZoom / 100);
-                    renderPage(currentPage);
-                });
+                await calculateFitScale();
+                scale = fitToPageScale * (currentZoom / 100);
+                await renderPage(currentPage);
             }
         });
 
@@ -1278,6 +1385,7 @@
             document.getElementById('fileInputLabel').style.display = 'none';
             uploadButton.style.display = 'none';
             generateLinkButton.style.display = 'none';
+            toggleSidebarButton.style.display = 'none';
         }
 
         // Mobile detection and handling
