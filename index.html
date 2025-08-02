@@ -459,11 +459,10 @@
             </div>
             
             <div class="controls-right">
-                <div id="zoom-controls">
-                    <button class="zoom-button" id="zoom-out">−</button>
-                    <span id="zoom-level">100%</span>
-                    <button class="zoom-button" id="zoom-in">+</button>
-                    <button id="fit-button">Fit</button>
+                <div id="navigation">
+                    <button class="nav-button" id="prev">◀</button>
+                    <span id="page-num">Page 0 of 0</span>
+                    <button class="nav-button" id="next">▶</button>
                 </div>
             </div>
         </div>
@@ -479,6 +478,12 @@
                 <div id="protection-overlay">
                     <div class="protection-text">PROTECTED CONTENT</div>
                     <div class="protection-subtext">Move cursor away to view</div>
+                </div>
+                <div id="zoom-controls">
+                    <button class="zoom-button" id="zoom-out">−</button>
+                    <span id="zoom-level">100%</span>
+                    <button class="zoom-button" id="zoom-in">+</button>
+                    <button id="fit-button">Fit</button>
                 </div>
                 <div id="pan-controls">
                     <div class="pan-row">
@@ -997,75 +1002,72 @@
         document.getElementById('pan-controls').addEventListener('mouseover', stopProtection);
         document.getElementById('pan-controls').addEventListener('mouseleave', startProtection);
 
+        // Zoom controls protection bypass
+        document.getElementById('zoom-controls').addEventListener('mouseover', stopProtection);
+        document.getElementById('zoom-controls').addEventListener('mouseleave', startProtection);
+
         // Keyboard protection - Enhanced with all original protections
         document.addEventListener('keydown', function(e) {
+            // Always start protection first for any key press
+            startProtection();
+            
             // Print protection
             if (e.ctrlKey && e.key === 'p') {
                 e.preventDefault();
-                startProtection();
                 return;
             }
             
             // PrintScreen protection
             if (e.key === 'PrintScreen') {
                 e.preventDefault();
-                startProtection();
                 return;
             }
             
             // Save protection
             if (e.ctrlKey && e.key === 's') {
                 e.preventDefault();
-                startProtection();
                 return;
             }
             
             // Select all protection
             if (e.ctrlKey && e.key === 'a') {
                 e.preventDefault();
-                startProtection();
                 return;
             }
             
             // Copy protection
             if (e.ctrlKey && e.key === 'c') {
                 e.preventDefault();
-                startProtection();
                 return;
             }
             
             // F12 DevTools protection
             if (e.key === 'F12') {
                 e.preventDefault();
-                startProtection();
                 return;
             }
             
             // Ctrl+Shift+I DevTools protection
             if (e.ctrlKey && e.shiftKey && e.key === 'I') {
                 e.preventDefault();
-                startProtection();
                 return;
             }
             
             // Ctrl+Shift+J Console protection
             if (e.ctrlKey && e.shiftKey && e.key === 'J') {
                 e.preventDefault();
-                startProtection();
                 return;
             }
             
             // Ctrl+Shift+C Element Inspector protection
             if (e.ctrlKey && e.shiftKey && e.key === 'C') {
                 e.preventDefault();
-                startProtection();
                 return;
             }
             
             // Enter key protection (original)
             if (e.key === 'Enter') {
                 e.preventDefault();
-                startProtection();
                 return;
             }
         });
@@ -1206,107 +1208,11 @@
             }
         }
 
-        // Keyboard navigation - Modified to work with protection
-        document.addEventListener('keydown', function(e) {
-            // First check for protection triggers
-            if (e.ctrlKey && e.key === 'p') {
-                e.preventDefault();
-                startProtection();
-                return;
-            }
-            
-            if (e.key === 'PrintScreen') {
-                e.preventDefault();
-                startProtection();
-                return;
-            }
-            
-            if (e.ctrlKey && e.key === 's') {
-                e.preventDefault();
-                startProtection();
-                return;
-            }
-            
-            if (e.ctrlKey && e.key === 'a') {
-                e.preventDefault();
-                startProtection();
-                return;
-            }
-            
-            if (e.ctrlKey && e.key === 'c') {
-                e.preventDefault();
-                startProtection();
-                return;
-            }
-            
-            if (e.key === 'F12') {
-                e.preventDefault();
-                startProtection();
-                return;
-            }
-            
-            if (e.ctrlKey && e.shiftKey && (e.key === 'I' || e.key === 'J' || e.key === 'C')) {
-                e.preventDefault();
-                startProtection();
-                return;
-            }
-            
-            if (e.key === 'Enter') {
-                e.preventDefault();
-                startProtection();
-                return;
-            }
-            
-            // Navigation keys (only work when not in input)
-            if (e.target.tagName !== 'INPUT' && !e.ctrlKey && !e.metaKey) {
-                switch(e.key) {
-                    case 'ArrowLeft':
-                        if (currentPage > 1) {
-                            e.preventDefault();
-                            prevButton.click();
-                        }
-                        break;
-                    case 'ArrowRight':
-                        if (currentPage < totalPages) {
-                            e.preventDefault();
-                            nextButton.click();
-                        }
-                        break;
-                    case 'ArrowUp':
-                        e.preventDefault();
-                        panUp.click();
-                        break;
-                    case 'ArrowDown':
-                        e.preventDefault();
-                        panDown.click();
-                        break;
-                    case '+':
-                    case '=':
-                        e.preventDefault();
-                        zoomInButton.click();
-                        break;
-                    case '-':
-                    case '_':
-                        e.preventDefault();
-                        zoomOutButton.click();
-                        break;
-                    case '0':
-                        e.preventDefault();
-                        fitButton.click();
-                        break;
-                }
-            }
-        });
-
-        // Mouse wheel zoom
+        // Mouse wheel zoom (disabled when protection is active)
         pdfContent.addEventListener('wheel', function(e) {
             if (e.ctrlKey || e.metaKey) {
                 e.preventDefault();
-                if (e.deltaY < 0) {
-                    zoomInButton.click();
-                } else {
-                    zoomOutButton.click();
-                }
+                startProtection();
             }
         }, { passive: false });
 
