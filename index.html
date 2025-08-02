@@ -652,56 +652,41 @@
         });
 
         // Zoom controls with better positioning
-        zoomInButton.addEventListener('click', () => {
-            if (currentZoom < 200) {
-                // Store center point before zoom
-                const centerX = pdfContent.scrollLeft + (pdfContent.clientWidth / 2);
-                const centerY = pdfContent.scrollTop + (pdfContent.clientHeight / 2);
-                const prevWidth = pdfContent.scrollWidth;
-                const prevHeight = pdfContent.scrollHeight;
-                
-                currentZoom += 25;
-                scale = fitToPageScale * (currentZoom / 100);
-                zoomLevel.textContent = `${currentZoom}%`;
-                
-                renderPage(currentPage).then(() => {
-                    // Maintain center point after zoom
-                    const newWidth = pdfContent.scrollWidth;
-                    const newHeight = pdfContent.scrollHeight;
-                    const scaleFactorX = newWidth / prevWidth;
-                    const scaleFactorY = newHeight / prevHeight;
-                    
-                    pdfContent.scrollLeft = (centerX * scaleFactorX) - (pdfContent.clientWidth / 2);
-                    pdfContent.scrollTop = (centerY * scaleFactorY) - (pdfContent.clientHeight / 2);
-                });
-            }
-        });
+  zoomInButton.addEventListener('click', () => {
+    if (currentZoom < 200) {
+        const previousZoom = currentZoom;
+        const centerX = pdfContent.scrollLeft + (pdfContent.clientWidth / 2);
+        const centerY = pdfContent.scrollTop + (pdfContent.clientHeight / 2);
 
-        zoomOutButton.addEventListener('click', () => {
-            if (currentZoom > 50) {
-                // Store center point before zoom
-                const centerX = pdfContent.scrollLeft + (pdfContent.clientWidth / 2);
-                const centerY = pdfContent.scrollTop + (pdfContent.clientHeight / 2);
-                const prevWidth = pdfContent.scrollWidth;
-                const prevHeight = pdfContent.scrollHeight;
-                
-                currentZoom -= 25;
-                scale = fitToPageScale * (currentZoom / 100);
-                zoomLevel.textContent = `${currentZoom}%`;
-                
-                renderPage(currentPage).then(() => {
-                    // Maintain center point after zoom
-                    const newWidth = pdfContent.scrollWidth;
-                    const newHeight = pdfContent.scrollHeight;
-                    const scaleFactorX = newWidth / prevWidth;
-                    const scaleFactorY = newHeight / prevHeight;
-                    
-                    pdfContent.scrollLeft = Math.max(0, (centerX * scaleFactorX) - (pdfContent.clientWidth / 2));
-                    pdfContent.scrollTop = Math.max(0, (centerY * scaleFactorY) - (pdfContent.clientHeight / 2));
-                });
-            }
-        });
+        currentZoom += 25;
+        scale = fitToPageScale * (currentZoom / 100);
+        zoomLevel.textContent = `${currentZoom}%`;
 
+        renderPage(currentPage).then(() => {
+            const scaleFactor = currentZoom / previousZoom;
+            pdfContent.scrollLeft = (centerX * scaleFactor) - (pdfContent.clientWidth / 2);
+            pdfContent.scrollTop = (centerY * scaleFactor) - (pdfContent.clientHeight / 2);
+        });
+    }
+});
+
+zoomOutButton.addEventListener('click', () => {
+    if (currentZoom > 50) {
+        const previousZoom = currentZoom;
+        const centerX = pdfContent.scrollLeft + (pdfContent.clientWidth / 2);
+        const centerY = pdfContent.scrollTop + (pdfContent.clientHeight / 2);
+
+        currentZoom -= 25;
+        scale = fitToPageScale * (currentZoom / 100);
+        zoomLevel.textContent = `${currentZoom}%`;
+
+        renderPage(currentPage).then(() => {
+            const scaleFactor = currentZoom / previousZoom;
+            pdfContent.scrollLeft = Math.max(0, (centerX * scaleFactor) - (pdfContent.clientWidth / 2));
+            pdfContent.scrollTop = Math.max(0, (centerY * scaleFactor) - (pdfContent.clientHeight / 2));
+        });
+    }
+});
         fitButton.addEventListener('click', () => {
             currentZoom = 100;
             scale = fitToPageScale;
