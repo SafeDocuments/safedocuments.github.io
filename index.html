@@ -437,7 +437,7 @@
             font-size: 13px;
         }
         
-        /* Status Message */
+        /* Status Message - Enhanced positioning */
         #statusMessage {
             position: fixed;
             bottom: 20px;
@@ -448,7 +448,8 @@
             box-shadow: 0 4px 6px rgba(0,0,0,0.3);
             display: none;
             max-width: 300px;
-            z-index: 1100;
+            z-index: 1200;
+            pointer-events: none;
         }
         
         #statusMessage.show {
@@ -1453,7 +1454,61 @@
         setupPanButton(panLeft, 'left');
         setupPanButton(panRight, 'right');
 
-        // Protection event listeners
+        // Protection event listeners with enhanced security
+        let protectionTimeout;
+        let lastMouseMove = Date.now();
+        let mouseVelocity = 0;
+        let lastMouseX = 0;
+        let lastMouseY = 0;
+        
+        // Enhanced mouse movement detection
+        document.addEventListener('mousemove', (e) => {
+            const currentTime = Date.now();
+            const timeDiff = currentTime - lastMouseMove;
+            
+            // Calculate mouse velocity
+            const deltaX = e.clientX - lastMouseX;
+            const deltaY = e.clientY - lastMouseY;
+            const distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
+            mouseVelocity = distance / Math.max(timeDiff, 1);
+            
+            lastMouseX = e.clientX;
+            lastMouseY = e.clientY;
+            lastMouseMove = currentTime;
+            
+            // If mouse is moving fast, immediately protect
+            if (mouseVelocity > 5) {
+                startProtection();
+                clearTimeout(protectionTimeout);
+                protectionTimeout = setTimeout(() => {
+                    if (mouseVelocity < 2) {
+                        stopProtection();
+                    }
+                }, 1000);
+            }
+        });
+        
+        // Prevent rapid clicking
+        let clickCount = 0;
+        let clickResetTimeout;
+        
+        document.addEventListener('click', (e) => {
+            clickCount++;
+            
+            if (clickCount > 2) {
+                e.preventDefault();
+                e.stopPropagation();
+                startProtection();
+                return false;
+            }
+            
+            clearTimeout(clickResetTimeout);
+            clickResetTimeout = setTimeout(() => {
+                clickCount = 0;
+            }, 500);
+        });
+        
+        // Original protection listeners
         pdfContent.addEventListener('mousemove', startProtection);
         pdfContent.addEventListener('mouseleave', stopProtection);
 
@@ -1480,6 +1535,7 @@
             // PrintScreen protection
             if (e.key === 'PrintScreen') {
                 e.preventDefault();
+                navigator.clipboard.writeText(''); // Clear clipboard
                 return false;
             }
             
@@ -1497,6 +1553,18 @@
             
             // Copy protection
             if ((e.ctrlKey || e.metaKey) && e.key === 'c') {
+                e.preventDefault();
+                return false;
+            }
+            
+            // Cut protection
+            if ((e.ctrlKey || e.metaKey) && e.key === 'x') {
+                e.preventDefault();
+                return false;
+            }
+            
+            // Paste protection
+            if ((e.ctrlKey || e.metaKey) && e.key === 'v') {
                 e.preventDefault();
                 return false;
             }
@@ -1521,6 +1589,12 @@
             
             // Ctrl+Shift+C Element Inspector protection
             if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key === 'C') {
+                e.preventDefault();
+                return false;
+            }
+            
+            // Ctrl+U View Source protection
+            if ((e.ctrlKey || e.metaKey) && e.key === 'u') {
                 e.preventDefault();
                 return false;
             }
@@ -1681,13 +1755,73 @@
             }
         }
 
-        // Mouse wheel zoom (disabled when protection is active)
-        pdfContent.addEventListener('wheel', function(e) {
-            if (e.ctrlKey || e.metaKey) {
-                e.preventDefault();
+        // Additional security measures
+        
+        // Disable text selection globally
+        document.body.style.userSelect = 'none';
+        document.body.style.webkitUserSelect = 'none';
+        document.body.style.mozUserSelect = 'none';
+        document.body.style.msUserSelect = 'none';
+        
+        // Prevent print via CSS
+        const style = document.createElement('style');
+        style.textContent = `
+            @media print {
+                body { display: none !important; }
+            }
+        `;
+        document.head.appendChild(style);
+        
+        // Disable right-click on images and canvases
+        document.addEventListener('mousedown', function(e) {
+            if (e.target.tagName === 'CANVAS' || e.target.tagName === 'IMG') {
+                if (e.button === 2) {
+                    e.preventDefault();
+                    return false;
+                }
+            }
+        });
+        
+        // Prevent screenshot extensions
+        document.addEventListener('visibilitychange', function() {
+            if (document.hidden) {
                 startProtection();
             }
-        }, { passive: false });
+        });
+        
+        // Detect and prevent automation tools
+        let isAutomated = false;
+        
+        Object.defineProperty(navigator, 'webdriver', {
+            get: () => {
+                isAutomated = true;
+                startProtection();
+                return undefined;
+            }
+        });
+        
+        // Detect headless browsers
+        if (navigator.userAgent.includes('HeadlessChrome')) {
+            isAutomated = true;
+            startProtection();
+        }
+        
+        // Prevent console opening via object logging
+        const element = new Image();
+        Object.defineProperty(element, 'id', {
+            get: function() {
+                startProtection();
+                showStatus('Developer tools detected. Content protected.', 'error');
+            }
+        });
+        console.log('%c', element);
+        
+        // Clear console periodically
+        setInterval(() => {
+            if (typeof console.clear === 'function') {
+                console.clear();
+            }
+        }, 1000);
 
         // Initialize protection and mobile check
         handleMobileRedirect();
