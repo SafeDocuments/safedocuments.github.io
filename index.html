@@ -86,10 +86,6 @@
             display: none;
         }
         
-        body.shared-view #sidebar {
-            display: none;
-        }
-        
         body.shared-view .controls-center {
             justify-content: center;
             margin-left: 0;
@@ -1662,7 +1658,7 @@
             document.getElementById('fileInputLabel').style.display = 'none';
             uploadButton.style.display = 'none';
             generateLinkButton.style.display = 'none';
-            toggleSidebarButton.style.display = 'none';
+            // Keep toggle sidebar button visible for shared links
         }
 
         // Mobile detection and handling
