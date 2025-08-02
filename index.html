@@ -457,24 +457,27 @@
         /* Responsive adjustments */
         @media (max-width: 1200px) {
             #top-bar {
-                flex-wrap: wrap;
+                flex-direction: column;
                 gap: 10px;
+                padding: 10px;
             }
             
             .controls-left, .controls-center, .controls-right {
                 width: 100%;
+                justify-content: center;
+                flex-wrap: wrap;
             }
             
             .controls-center {
-                order: 3;
-                justify-content: space-around;
-                flex-wrap: wrap;
                 gap: 10px;
             }
             
             .controls-right {
-                order: 2;
-                justify-content: center;
+                text-align: center;
+            }
+            
+            #navigation, #zoom-controls, #pan-controls-header {
+                transform: scale(0.9);
             }
         }
         
@@ -487,12 +490,39 @@
                 margin-left: -155px;
             }
             
-            .controls-center > div {
-                transform: scale(0.9);
+            #navigation, #zoom-controls, #pan-controls-header {
+                transform: scale(0.8);
+            }
+            
+            .controls-center {
+                gap: 5px;
             }
             
             body.shared-view .controls-center {
                 margin-left: 0;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            #top-bar {
+                padding: 5px;
+            }
+            
+            #fileInputLabel, button {
+                padding: 8px 12px;
+                font-size: 12px;
+            }
+            
+            #navigation, #zoom-controls, #pan-controls-header {
+                transform: scale(0.7);
+                margin: 0 -5px;
+            }
+            
+            .controls-center {
+                overflow-x: auto;
+                overflow-y: hidden;
+                -webkit-overflow-scrolling: touch;
+                padding: 5px 0;
             }
         }
         
@@ -1142,11 +1172,12 @@
         const panDown = document.getElementById('pan-down');
         const panLeft = document.getElementById('pan-left');
         const panRight = document.getElementById('pan-right');
-        const panAmount = 150;
 
         panUp.addEventListener('click', (e) => {
             e.preventDefault();
             e.stopPropagation();
+            // Calculate pan amount based on viewport height, not content height
+            const panAmount = Math.min(150, pdfContent.clientHeight * 0.3);
             pdfContent.scrollBy({
                 top: -panAmount,
                 behavior: 'smooth'
@@ -1156,6 +1187,8 @@
         panDown.addEventListener('click', (e) => {
             e.preventDefault();
             e.stopPropagation();
+            // Calculate pan amount based on viewport height, not content height
+            const panAmount = Math.min(150, pdfContent.clientHeight * 0.3);
             pdfContent.scrollBy({
                 top: panAmount,
                 behavior: 'smooth'
@@ -1165,6 +1198,8 @@
         panLeft.addEventListener('click', (e) => {
             e.preventDefault();
             e.stopPropagation();
+            // Calculate pan amount based on viewport width, not content width
+            const panAmount = Math.min(150, pdfContent.clientWidth * 0.3);
             pdfContent.scrollBy({
                 left: -panAmount,
                 behavior: 'smooth'
@@ -1174,6 +1209,8 @@
         panRight.addEventListener('click', (e) => {
             e.preventDefault();
             e.stopPropagation();
+            // Calculate pan amount based on viewport width, not content width
+            const panAmount = Math.min(150, pdfContent.clientWidth * 0.3);
             pdfContent.scrollBy({
                 left: panAmount,
                 behavior: 'smooth'
