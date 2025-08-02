@@ -225,10 +225,10 @@
             width: 100%;
             height: 100%;
             display: flex;
-            justify-content: center;
-            align-items: center;
+            justify-content: flex-start;
+            align-items: flex-start;
             overflow: auto;
-            padding: 0;
+            padding: 20px;
         }
         
         #pdf-canvas-container {
@@ -237,7 +237,8 @@
             border-radius: 8px;
             overflow: visible;
             display: inline-block;
-            margin: 20px auto;
+            margin: 0;
+            padding: 20px;
         }
         
         canvas {
@@ -1006,22 +1007,9 @@
             
             // Center the page after loading
             requestAnimationFrame(() => {
-                const containerWidth = pdfContent.clientWidth;
-                const containerHeight = pdfContent.clientHeight;
-                const contentWidth = pdfCanvasContainer.offsetWidth + 40;
-                const contentHeight = pdfCanvasContainer.offsetHeight + 40;
-                
-                if (contentWidth < containerWidth) {
-                    pdfContent.scrollLeft = 0;
-                } else {
-                    pdfContent.scrollLeft = (contentWidth - containerWidth) / 2;
-                }
-                
-                if (contentHeight < containerHeight) {
-                    pdfContent.scrollTop = 0;
-                } else {
-                    pdfContent.scrollTop = (contentHeight - containerHeight) / 2;
-                }
+                // Don't center, just go to top-left
+                pdfContent.scrollTop = 0;
+                pdfContent.scrollLeft = 0;
             });
             
             startProtection();
@@ -1177,96 +1165,72 @@
             e.preventDefault();
             e.stopPropagation();
             
-            const currentScroll = pdfContent.scrollTop;
-            const viewportHeight = pdfContent.clientHeight;
+            // Force scroll to absolute top
+            pdfContent.scrollTop = 0;
             
-            // If we're close to the top (within one viewport height), go all the way
-            if (currentScroll <= viewportHeight) {
-                pdfContent.scrollTo({
-                    top: 0,
-                    behavior: 'smooth'
-                });
-            } else {
-                // Otherwise, scroll by 30% of viewport
-                const panAmount = viewportHeight * 0.3;
-                pdfContent.scrollBy({
-                    top: -panAmount,
-                    behavior: 'smooth'
-                });
-            }
+            // Multiple attempts to ensure it sticks
+            requestAnimationFrame(() => {
+                pdfContent.scrollTop = 0;
+            });
+            
+            setTimeout(() => {
+                pdfContent.scrollTop = 0;
+            }, 50);
         });
 
         panDown.addEventListener('click', (e) => {
             e.preventDefault();
             e.stopPropagation();
             
-            const currentScroll = pdfContent.scrollTop;
+            // Calculate and force scroll to absolute bottom
             const maxScroll = pdfContent.scrollHeight - pdfContent.clientHeight;
-            const viewportHeight = pdfContent.clientHeight;
-            const remainingScroll = maxScroll - currentScroll;
+            pdfContent.scrollTop = maxScroll;
             
-            // If we're close to the bottom (within one viewport height), go all the way
-            if (remainingScroll <= viewportHeight) {
-                pdfContent.scrollTo({
-                    top: maxScroll,
-                    behavior: 'smooth'
-                });
-            } else {
-                // Otherwise, scroll by 30% of viewport
-                const panAmount = viewportHeight * 0.3;
-                pdfContent.scrollBy({
-                    top: panAmount,
-                    behavior: 'smooth'
-                });
-            }
+            // Multiple attempts to ensure it sticks
+            requestAnimationFrame(() => {
+                pdfContent.scrollTop = maxScroll;
+            });
+            
+            setTimeout(() => {
+                const newMax = pdfContent.scrollHeight - pdfContent.clientHeight;
+                pdfContent.scrollTop = newMax;
+            }, 50);
         });
 
         panLeft.addEventListener('click', (e) => {
             e.preventDefault();
             e.stopPropagation();
             
-            const currentScroll = pdfContent.scrollLeft;
-            const viewportWidth = pdfContent.clientWidth;
+            // Force scroll to absolute left
+            pdfContent.scrollLeft = 0;
             
-            // If we're close to the left (within one viewport width), go all the way
-            if (currentScroll <= viewportWidth) {
-                pdfContent.scrollTo({
-                    left: 0,
-                    behavior: 'smooth'
-                });
-            } else {
-                // Otherwise, scroll by 30% of viewport
-                const panAmount = viewportWidth * 0.3;
-                pdfContent.scrollBy({
-                    left: -panAmount,
-                    behavior: 'smooth'
-                });
-            }
+            // Multiple attempts to ensure it sticks
+            requestAnimationFrame(() => {
+                pdfContent.scrollLeft = 0;
+            });
+            
+            setTimeout(() => {
+                pdfContent.scrollLeft = 0;
+            }, 50);
         });
 
         panRight.addEventListener('click', (e) => {
             e.preventDefault();
             e.stopPropagation();
             
-            const currentScroll = pdfContent.scrollLeft;
+            // Calculate and force scroll to absolute right
             const maxScroll = pdfContent.scrollWidth - pdfContent.clientWidth;
-            const viewportWidth = pdfContent.clientWidth;
-            const remainingScroll = maxScroll - currentScroll;
+            pdfContent.scrollLeft = maxScroll;
             
-            // If we're close to the right (within one viewport width), go all the way
-            if (remainingScroll <= viewportWidth) {
-                pdfContent.scrollTo({
-                    left: maxScroll,
-                    behavior: 'smooth'
-                });
-            } else {
-                // Otherwise, scroll by 30% of viewport
-                const panAmount = viewportWidth * 0.3;
-                pdfContent.scrollBy({
-                    left: panAmount,
-                    behavior: 'smooth'
-                });
-            }
+            // Multiple attempts to ensure it sticks
+            requestAnimationFrame(() => {
+                pdfContent.scrollLeft = maxScroll;
+            });
+            
+            setTimeout(() => {
+                const newMax = pdfContent.scrollWidth - pdfContent.clientWidth;
+                pdfContent.scrollLeft = newMax;
+            }, 50);
         });
 
         // Protection event listeners
