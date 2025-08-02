@@ -66,6 +66,8 @@
             flex-grow: 1;
             justify-content: center;
             gap: 20px;
+                flex-shrink: 0;
+
         }
         
         .controls-right {
@@ -408,7 +410,42 @@
         .loading-spinner.show {
             display: block;
         }
-        
+        /* Add a hidden state for sidebar */
+.sidebar-hidden #sidebar {
+    display: none;
+}
+
+/* When sidebar hidden, expand pdf-viewer to full width */
+.sidebar-hidden .pdf-container {
+    gap: 0;
+}
+
+.sidebar-hidden #pdf-viewer {
+    flex-grow: 1;
+}
+
+/* Adjust controls-center to avoid overflow and fix button spacing */
+#top-bar .controls-center {
+    flex-wrap: nowrap; /* Prevent wrapping */
+    overflow-x: auto;  /* Allow horizontal scroll if needed */
+    gap: 10px;
+}
+
+/* Make toggle button consistent style */
+#toggle-sidebar {
+    background: rgba(60,60,60,0.9);
+    border: 1px solid rgba(100,100,100,0.3);
+    cursor: pointer;
+    font-size: 18px;
+    border-radius: 8px;
+    color: white;
+    transition: background 0.3s ease;
+}
+
+#toggle-sidebar:hover {
+    background: rgba(80,80,80,0.9);
+}
+
         @keyframes spin {
             to { transform: translate(-50%, -50%) rotate(360deg); }
         }
@@ -490,6 +527,8 @@
                     <button class="nav-button" id="prev">◀</button>
                     <span id="page-num">Page 0 of 0</span>
                     <button class="nav-button" id="next">▶</button>
+                    <button id="toggle-sidebar" title="Toggle Sidebar" class="nav-button" style="min-width: auto; padding: 8px 12px;">▶</button>
+
                 </div>
                 
                 <div id="zoom-controls">
@@ -1260,6 +1299,20 @@ pdfContent.scrollBy({ top: -panAmount, behavior: 'smooth' });
             uploadButton.style.display = 'none';
             generateLinkButton.style.display = 'none';
         }
+const toggleSidebarButton = document.getElementById('toggle-sidebar');
+const mainContainer = document.querySelector('.main-container');
+
+toggleSidebarButton.addEventListener('click', () => {
+    mainContainer.classList.toggle('sidebar-hidden');
+    
+    // Optional: after toggling, re-render or adjust scale if needed
+    if (currentPdf) {
+        calculateFitScale().then(() => {
+            scale = fitToPageScale * (currentZoom / 100);
+            renderPage(currentPage);
+        });
+    }
+});
 
         // Mobile detection and handling
         function isMobile() {
