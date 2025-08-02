@@ -1,134 +1,1107 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Safe Documents - Public Share</title>
-    <script src="https://apis.google.com/js/api.js"></script>
-    <script src="https://accounts.google.com/gsi/client"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.9.359/pdf.min.js"></script>
-    <style>
-        * { box-sizing: border-box; }
-        body, html { margin: 0; padding: 0; height: 100%; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif; background-color: #0f0f0f; color: #f7f7f7; overflow: hidden; user-select: none; }
-        .main-container { display: flex; flex-direction: column; height: 100vh; max-width: 1400px; margin: 0 auto; padding: 15px; background-color: rgba(20,20,20,0.95); backdrop-filter: blur(10px); }
-        #top-bar { display: flex; justify-content: space-between; align-items: center; padding: 15px 20px; background: linear-gradient(135deg, #1e1e1e 0%, #282828 100%); border-radius: 12px; margin-bottom: 15px; }
-        .controls-left, .controls-center, .controls-right { display: flex; align-items: center; gap: 10px; }
-        .controls-center { flex-grow: 1; justify-content: center; gap: 20px; }
-        #fileInput { display: none; }
-        label, button { padding: 10px 20px; background: linear-gradient(135deg, #00a86b 0%, #00c77f 100%); border: none; border-radius: 8px; color: white; cursor: pointer; font-size: 14px; transition: all 0.3s ease; }
-        label:hover, button:hover { background: linear-gradient(135deg, #007bff 0%, #0056b3 100%); }
-        button:disabled { background: #444; cursor: not-allowed; opacity: 0.6; }
-        .pdf-container { flex-grow: 1; display: flex; gap: 15px; overflow: hidden; }
-        #sidebar { width: 180px; background: rgba(30,30,30,0.9); border-radius: 12px; padding: 10px; overflow-y: auto; }
-        .thumbnail { margin-bottom: 10px; cursor: pointer; position: relative; }
-        .thumbnail canvas { width: 100%; display: block; }
-        .thumbnail.active { box-shadow: 0 0 0 3px #00a86b; }
-        .page-label { position: absolute; bottom: 5px; right: 5px; background: rgba(0,0,0,0.8); color: white; padding: 2px 8px; border-radius: 4px; font-size: 12px; }
-        #pdf-viewer { flex-grow: 1; position: relative; background: #1a1a1a; border-radius: 12px; overflow: hidden; }
-        #pdf-content { position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: flex; justify-content: center; align-items: center; overflow: auto; }
-        #pdf-canvas-container { position: relative; box-shadow: 0 0 20px rgba(0,0,0,0.5); border-radius: 8px; margin: 20px; }
-        canvas { background: white; }
-        #navigation, #zoom-controls, #pan-controls-header { display: flex; align-items: center; gap: 10px; background: rgba(40,40,40,0.9); padding: 8px; border-radius: 8px; }
-        .nav-button, .zoom-button, .pan-button-small { background: rgba(60,60,60,0.9); border: 1px solid rgba(100,100,100,0.3); color: white; font-size: 16px; padding: 8px; cursor: pointer; }
-        .zoom-button, .pan-button-small { width: 36px; height: 36px; display: flex; justify-content: center; align-items: center; }
-        #fit-button { padding: 8px 15px; }
-        #statusMessage { position: fixed; bottom: 20px; right: 20px; padding: 12px 20px; background: rgba(40,40,40,0.95); border-radius: 8px; display: none; }
-        #statusMessage.show { display: block; animation: slideIn 0.3s ease; }
-        @keyframes slideIn { from { transform: translateX(100%); } to { transform: translateX(0); } }
-        #shareableLinkModal { display: none; position: fixed; z-index:2000; left:0; top:0; width:100%; height:100%; background:rgba(0,0,0,0.9); backdrop-filter:blur(5px); }
-        #shareableLinkModalContent { background: #2a2a2a; margin:10% auto; padding:30px; width:90%; max-width:500px; text-align:center; border-radius:16px; }
-        #shareableLink { background: #141414; padding:15px; border-radius:8px; word-break:break-all; font-family:monospace; }
-    </style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Safe Documents - Enhanced</title>
+
+  <!-- Google API and PDF.js -->
+  <script src="https://apis.google.com/js/api.js"></script>
+  <script src="https://accounts.google.com/gsi/client"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.9.359/pdf.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.0.0/crypto-js.min.js"></script>
+
+  <style>
+    /* === Your original full CSS from the provided code === */
+    * {
+      box-sizing: border-box;
+    }
+    body, html {
+      margin: 0; padding: 0; height: 100%;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+      background-color: #0f0f0f;
+      color: #f7f7f7;
+      background-image: url('https://github.com/SafeDocuments/safedocuments.github.io/blob/main/pikaso_enhance__none_4K_Standard_r_c_.jpeg?raw=true');
+      background-repeat: repeat;
+      background-size: 150px 150px;
+      overflow: hidden;
+      user-select: none;
+    }
+    .main-container {
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 15px;
+      background-color: rgba(20, 20, 20, 0.95);
+      backdrop-filter: blur(10px);
+      box-shadow: 0 0 30px rgba(0,0,0,0.8);
+    }
+    #top-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 15px 20px;
+      background: linear-gradient(135deg, rgba(30,30,30,0.9) 0%, rgba(40,40,40,0.9) 100%);
+      border-radius: 12px;
+      margin-bottom: 15px;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+      flex-wrap: wrap;
+      gap: 15px;
+    }
+    .controls-left, .controls-center, .controls-right {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .controls-center {
+      flex-grow: 1;
+      justify-content: center;
+      gap: 20px;
+    }
+    .controls-right {
+      font-size: 14px;
+      opacity: 0.8;
+    }
+    body.shared-view .controls-left {
+      display: none;
+    }
+    body.shared-view #sidebar {
+      display: none;
+    }
+    body.shared-view .controls-center {
+      justify-content: flex-start;
+      margin-left: 20px;
+    }
+    #fileInput {
+      display: none;
+    }
+    #fileInputLabel, button {
+      padding: 10px 20px;
+      background: linear-gradient(135deg, #00a86b 0%, #00c77f 100%);
+      border: none;
+      border-radius: 8px;
+      color: white;
+      cursor: pointer;
+      font-weight: 500;
+      font-size: 14px;
+      transition: all 0.3s ease;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+    }
+    #fileInputLabel:hover, button:hover:not(:disabled) {
+      background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
+      transform: translateY(-1px);
+      box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+    }
+    button:disabled {
+      background: linear-gradient(135deg, #333 0%, #444 100%);
+      cursor: not-allowed;
+      opacity: 0.6;
+    }
+    .pdf-container {
+      flex-grow: 1;
+      display: flex;
+      gap: 15px;
+      overflow: hidden;
+    }
+    #sidebar {
+      width: 180px;
+      background: rgba(30,30,30,0.9);
+      border-radius: 12px;
+      padding: 10px;
+      overflow-y: auto;
+      overflow-x: hidden;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+    }
+    .thumbnail {
+      width: 100%;
+      margin-bottom: 10px;
+      cursor: pointer;
+      border-radius: 8px;
+      overflow: hidden;
+      transition: all 0.3s ease;
+      position: relative;
+    }
+    .thumbnail canvas {
+      width: 100%;
+      display: block;
+    }
+    .thumbnail.active {
+      box-shadow: 0 0 0 3px #00a86b;
+    }
+    .thumbnail:hover {
+      transform: scale(1.05);
+    }
+    .page-label {
+      position: absolute;
+      bottom: 5px;
+      right: 5px;
+      background: rgba(0,0,0,0.8);
+      color: white;
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-size: 12px;
+    }
+    #pdf-viewer {
+      flex-grow: 1;
+      position: relative;
+      background: #1a1a1a;
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+    }
+    #pdf-content {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      overflow: auto;
+      padding: 0;
+    }
+    #pdf-canvas-container {
+      position: relative;
+      box-shadow: 0 0 20px rgba(0,0,0,0.5);
+      border-radius: 8px;
+      overflow: visible;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      margin: 20px;
+    }
+    canvas {
+      display: block;
+      background: white;
+    }
+    #protection-overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.98);
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      z-index: 1000;
+      pointer-events: none;
+      backdrop-filter: blur(5px);
+      user-select: none;
+    }
+    #protection-overlay .protection-text {
+      font-size: 28px;
+      font-weight: 600;
+      letter-spacing: 3px;
+      margin-bottom: 10px;
+      background: linear-gradient(45deg, #ff6b6b, #4ecdc4);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    #protection-overlay .protection-subtext {
+      font-size: 14px;
+      opacity: 0.7;
+    }
+    #navigation {
+      display: flex;
+      align-items: center;
+      gap: 15px;
+      background: rgba(40,40,40,0.9);
+      padding: 8px 15px;
+      border-radius: 8px;
+    }
+    #page-num {
+      font-size: 14px;
+      min-width: 100px;
+      text-align: center;
+    }
+    .nav-button {
+      padding: 8px 12px;
+      background: rgba(60,60,60,0.9);
+      border: 1px solid rgba(100,100,100,0.3);
+      font-size: 16px;
+      cursor: pointer;
+      user-select: none;
+    }
+    .nav-button:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+    #zoom-controls {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      background: rgba(40,40,40,0.9);
+      padding: 8px 15px;
+      border-radius: 8px;
+    }
+    .zoom-button {
+      width: 36px;
+      height: 36px;
+      padding: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+      background: rgba(60,60,60,0.9);
+      border: 1px solid rgba(100,100,100,0.3);
+      cursor: pointer;
+      user-select: none;
+    }
+    #fit-button {
+      padding: 8px 15px;
+      font-size: 13px;
+      cursor: pointer;
+      user-select: none;
+    }
+    #zoom-level {
+      font-size: 14px;
+      min-width: 60px;
+      text-align: center;
+      user-select: none;
+    }
+    #pan-controls-header {
+      display: flex;
+      gap: 5px;
+      background: rgba(40,40,40,0.9);
+      padding: 8px;
+      border-radius: 8px;
+    }
+    .pan-button-small {
+      width: 32px;
+      height: 32px;
+      padding: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 16px;
+      background: rgba(60,60,60,0.9);
+      border: 1px solid rgba(100,100,100,0.3);
+      cursor: pointer;
+      transition: all 0.2s ease;
+      user-select: none;
+    }
+    .pan-button-small:hover {
+      background: rgba(80,80,80,0.9);
+    }
+    .pan-button-small:active {
+      transform: scale(0.95);
+    }
+    #statusMessage {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      padding: 12px 20px;
+      background: rgba(40,40,40,0.95);
+      border-radius: 8px;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+      display: none;
+      max-width: 300px;
+      z-index: 1100;
+      user-select: none;
+    }
+    #statusMessage.show {
+      display: block;
+      animation: slideIn 0.3s ease;
+    }
+    #statusMessage.error {
+      background: rgba(211, 47, 47, 0.95);
+    }
+    #statusMessage.success {
+      background: rgba(0, 168, 107, 0.95);
+    }
+    @keyframes slideIn {
+      from { transform: translateX(100%); }
+      to { transform: translateX(0); }
+    }
+    #shareableLinkModal {
+      display: none;
+      position: fixed;
+      z-index: 2000;
+      left: 0;
+      top: 0;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(0, 0, 0, 0.9);
+      backdrop-filter: blur(5px);
+      user-select: text;
+    }
+    #shareableLinkModalContent {
+      background: linear-gradient(135deg, #2a2a2a 0%, #3a3a3a 100%);
+      margin: 10% auto;
+      padding: 30px;
+      border: 1px solid #555;
+      width: 90%;
+      max-width: 500px;
+      text-align: center;
+      border-radius: 16px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+      user-select: text;
+    }
+    #shareableLink {
+      background: rgba(20,20,20,0.8);
+      padding: 15px;
+      border-radius: 8px;
+      word-break: break-word;
+      margin: 20px 0;
+      font-family: monospace;
+      font-size: 14px;
+      user-select: text;
+    }
+    .loading-spinner {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 50px;
+      height: 50px;
+      border: 3px solid rgba(255,255,255,0.1);
+      border-top-color: #00a86b;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+      display: none;
+      user-select: none;
+    }
+    .loading-spinner.show {
+      display: block;
+    }
+    @keyframes spin {
+      to { transform: translate(-50%, -50%) rotate(360deg); }
+    }
+    /* Responsive adjustments */
+    @media (max-width: 1024px) {
+      #sidebar {
+        width: 140px;
+      }
+      #top-bar {
+        flex-direction: column;
+        align-items: stretch;
+      }
+      .controls-center {
+        margin-left: 0;
+        justify-content: center;
+      }
+    }
+    @media (max-width: 768px) {
+      #sidebar {
+        display: none;
+      }
+      .controls-left, .controls-center, .controls-right {
+        flex-wrap: wrap;
+        justify-content: center;
+      }
+      #navigation, #zoom-controls {
+        flex-wrap: nowrap;
+      }
+      body.shared-view .controls-center {
+        margin-left: 0;
+      }
+    }
+    ::-webkit-scrollbar {
+      width: 8px;
+      height: 8px;
+    }
+    ::-webkit-scrollbar-track {
+      background: rgba(30,30,30,0.5);
+      border-radius: 4px;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: rgba(100,100,100,0.5);
+      border-radius: 4px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: rgba(100,100,100,0.7);
+    }
+  </style>
 </head>
 <body>
-    <div class="main-container">
-        <div id="top-bar">
-            <div class="controls-left">
-                <input type="file" id="fileInput" accept="application/pdf">
-                <label for="fileInput">📄 Choose PDF</label>
-                <button id="uploadButton" disabled>☁️ Upload to Drive</button>
-                <button id="generateLinkButton" disabled>🔗 Generate Link</button>
-            </div>
-            <div class="controls-center">
-                <div id="navigation">
-                    <button class="nav-button" id="prev">◀</button>
-                    <span id="page-num">Page 0 of 0</span>
-                    <button class="nav-button" id="next">▶</button>
-                </div>
-                <div id="zoom-controls">
-                    <button class="zoom-button" id="zoom-out">−</button>
-                    <span id="zoom-level">100%</span>
-                    <button class="zoom-button" id="zoom-in">+</button>
-                    <button id="fit-button">Fit</button>
-                </div>
-                <div id="pan-controls-header">
-                    <button class="pan-button-small" id="pan-up">↑</button>
-                    <button class="pan-button-small" id="pan-down">↓</button>
-                    <button class="pan-button-small" id="pan-left">←</button>
-                    <button class="pan-button-small" id="pan-right">→</button>
-                </div>
-            </div>
-<div class="controls-right"><span id="document-name"></span></div></div>
-        <div class="pdf-container">
-            <div id="sidebar"></div>
-            <div id="pdf-viewer">
-                <div id="pdf-content"><div id="pdf-canvas-container"><div class="loading-spinner"></div></div></div>
-            </div>
+  <div class="main-container">
+    <div id="top-bar">
+      <div class="controls-left">
+        <input type="file" id="fileInput" accept="application/pdf" />
+        <label for="fileInput" id="fileInputLabel">📄 Choose PDF</label>
+        <button id="uploadButton" disabled>☁️ Upload to Drive</button>
+        <button id="generateLinkButton" disabled>🔗 Generate Link</button>
+      </div>
+      <div class="controls-center">
+        <div id="navigation">
+          <button class="nav-button" id="prev" disabled>◀</button>
+          <span id="page-num">Page 0 of 0</span>
+          <button class="nav-button" id="next" disabled>▶</button>
         </div>
-    </div>
-    <div id="statusMessage"></div>
-    <div id="shareableLinkModal">
-        <div id="shareableLinkModalContent">
-            <h2>📋 Shareable Link Generated</h2>
-            <p id="shareableLink"></p>
-            <button id="copyButton">📋 Copy Link</button>
+        <div id="zoom-controls">
+          <button class="zoom-button" id="zoom-out" title="Zoom Out" disabled>−</button>
+          <span id="zoom-level">100%</span>
+          <button class="zoom-button" id="zoom-in" title="Zoom In" disabled>+</button>
+          <button id="fit-button" title="Fit to Page" disabled>Fit</button>
         </div>
+        <div id="pan-controls-header">
+          <button class="pan-button-small" id="pan-up" title="Pan Up" disabled>↑</button>
+          <button class="pan-button-small" id="pan-down" title="Pan Down" disabled>↓</button>
+          <button class="pan-button-small" id="pan-left" title="Pan Left" disabled>←</button>
+          <button class="pan-button-small" id="pan-right" title="Pan Right" disabled>→</button>
+        </div>
+      </div>
+      <div class="controls-right">
+        <span id="document-name"></span>
+      </div>
     </div>
-    <script>
-        const CLIENT_ID = '480657269781-3oo277sppsmm2qj1i7uku5dvfbncghsv.apps.googleusercontent.com';
-        const API_KEY = 'AIzaSyCawbOm-B5FGvuFNszpZrrpkpOYugaGHE8';
-        const DISCOVERY_DOC = 'https://www.googleapis.com/discovery/v1/apis/drive/v3/rest';
-        const SCOPES = 'https://www.googleapis.com/auth/drive.file';
-        const FOLDER_ID = '1w17OEokh0z5o6MzXWjOYVUYITkW77Fnh';
-        let tokenClient, gapiInited=false, gisInited=false;
-        let currentPdf=null, currentPage=1, totalPages=0, currentFileId='', scale=1.5, currentZoom=100, fitScale=1.5;
-        const fileInput=document.getElementById('fileInput'), uploadButton=document.getElementById('uploadButton'), generateLinkButton=document.getElementById('generateLinkButton');
-        const shareModal=document.getElementById('shareableLinkModal'), linkDiv=document.getElementById('shareableLink'), copyBtn=document.getElementById('copyButton');
-        pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.9.359/pdf.worker.min.js';
-        function gapiLoaded(){ gapi.load('client', initGapi); }
-        async function initGapi(){ await gapi.client.init({apiKey:API_KEY, discoveryDocs:[DISCOVERY_DOC]}); gapiInited=true; maybeEnable(); checkURL(); }
-        function gisLoaded(){ tokenClient=google.accounts.oauth2.initTokenClient({client_id:CLIENT_ID, scope:SCOPES, callback:''}); gisInited=true; maybeEnable(); }
-        function maybeEnable(){ if(gapiInited && gisInited) uploadButton.disabled=false; }
-        fileInput.addEventListener('change',()=>{ if(fileInput.files.length){ uploadButton.disabled=false; document.getElementById('document-name').textContent=fileInput.files[0].name; loadPDFFromFile(fileInput.files[0]);}});
-        uploadButton.addEventListener('click',handleAuth);
-        generateLinkButton.addEventListener('click',()=>{ const url=`https://drive.google.com/file/d/${currentFileId}/view?usp=sharing`; linkDiv.textContent=url; shareModal.style.display='block'; });
-        copyBtn.addEventListener('click',()=>{ navigator.clipboard.writeText(linkDiv.textContent); showStatus('Link copied!', 'success'); setTimeout(()=>shareModal.style.display='none',1000); });
-        function handleAuth(){ tokenClient.callback=async(resp)=>{ if(resp.error) return showStatus('Auth error','error'); await upload(); }; if(!gapi.client.getToken()) tokenClient.requestAccessToken({prompt:'consent'}); else tokenClient.requestAccessToken({prompt:''}); }
-        async function upload(){ const file=fileInput.files[0]; if(!file) return showStatus('Select file first','error'); try{ showStatus('Uploading...'); const metadata={name:file.name, mimeType:file.type, parents:FOLDER_ID?[FOLDER_ID]:[]}; const form=new FormData(); form.append('metadata',new Blob([JSON.stringify(metadata)],{type:'application/json'})); form.append('file', file);
-                const resp=await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id', {method:'POST', headers:{'Authorization':'Bearer '+gapi.auth.getToken().access_token}, body: form}); const res=await resp.json(); if(!resp.ok) throw new Error(res.error.message);
-                currentFileId=res.id;
-                // Make public
-                await gapi.client.drive.permissions.create({ fileId: currentFileId, resource: { role: 'reader', type: 'anyone' } });
-                showStatus('Uploaded & shared!', 'success'); generateLinkButton.disabled=false;
-            }catch(e){ showStatus('Upload error: '+e.message,'error'); }
+
+    <div class="pdf-container">
+      <div id="sidebar"></div>
+      <div id="pdf-viewer">
+        <div id="pdf-content">
+          <div id="pdf-canvas-container">
+            <div class="loading-spinner"></div>
+          </div>
+        </div>
+        <div id="protection-overlay">
+          <div class="protection-text">PROTECTED CONTENT</div>
+          <div class="protection-subtext">Move cursor away to view</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="statusMessage"></div>
+
+  <div id="shareableLinkModal">
+    <div id="shareableLinkModalContent">
+      <h2 style="margin-top: 0;">📋 Shareable Link Generated</h2>
+      <p id="shareableLink"></p>
+      <button id="copyButton">📋 Copy Link</button>
+    </div>
+  </div>
+
+<script>
+  // === Constants and variables ===
+  const CLIENT_ID = '480657269781-3oo277sppsmm2qj1i7uku5dvfbncghsv.apps.googleusercontent.com';
+  const API_KEY = 'AIzaSyCawbOm-B5FGvuFNszpZrrpkpOYugaGHE8';
+  const DISCOVERY_DOC = 'https://www.googleapis.com/discovery/v1/apis/drive/v3/rest';
+  const SCOPES = 'https://www.googleapis.com/auth/drive'; // Full Drive scope for permission management
+  const FOLDER_ID = '1w17OEokh0z5o6MzXWjOYVUYITkW77Fnh';
+
+  let tokenClient;
+  let gapiInited = false;
+  let gisInited = false;
+
+  let currentPdf = null;
+  let currentPage = 1;
+  let totalPages = 0;
+  let currentFileId = null;
+  let currentFileName = '';
+  let scale = 1.5;
+  let currentZoom = 100;
+  let fitToPageScale = 1.5;
+
+  // DOM Elements
+  const uploadButton = document.getElementById('uploadButton');
+  const generateLinkButton = document.getElementById('generateLinkButton');
+  const fileInput = document.getElementById('fileInput');
+  const pdfContent = document.getElementById('pdf-content');
+  const pdfCanvasContainer = document.getElementById('pdf-canvas-container');
+  const protectionOverlay = document.getElementById('protection-overlay');
+  const prevButton = document.getElementById('prev');
+  const nextButton = document.getElementById('next');
+  const pageNum = document.getElementById('page-num');
+  const statusMessageDiv = document.getElementById('statusMessage');
+  const shareableLinkModal = document.getElementById('shareableLinkModal');
+  const shareableLinkDiv = document.getElementById('shareableLink');
+  const copyButton = document.getElementById('copyButton');
+  const zoomInButton = document.getElementById('zoom-in');
+  const zoomOutButton = document.getElementById('zoom-out');
+  const zoomLevel = document.getElementById('zoom-level');
+  const fitButton = document.getElementById('fit-button');
+  const sidebar = document.getElementById('sidebar');
+  const loadingSpinner = document.querySelector('.loading-spinner');
+  const documentNameEl = document.getElementById('document-name');
+
+  // === Initialize PDF.js worker ===
+  pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.9.359/pdf.worker.min.js';
+
+  // === Google API Initialization ===
+  function gapiLoaded() {
+    gapi.load('client', initializeGapiClient);
+  }
+
+  async function initializeGapiClient() {
+    try {
+      await gapi.client.init({
+        apiKey: API_KEY,
+        discoveryDocs: [DISCOVERY_DOC],
+      });
+      gapiInited = true;
+      maybeEnableButtons();
+      checkFileIdInURL();
+    } catch (err) {
+      showError('Error initializing GAPI client', err);
+    }
+  }
+
+  function gisLoaded() {
+    tokenClient = google.accounts.oauth2.initTokenClient({
+      client_id: CLIENT_ID,
+      scope: SCOPES,
+      callback: '', // set later
+    });
+    gisInited = true;
+    maybeEnableButtons();
+  }
+
+  function maybeEnableButtons() {
+    if (gapiInited && gisInited) {
+      uploadButton.disabled = false;
+    }
+  }
+
+  // === Event Listeners ===
+  fileInput.addEventListener('change', () => {
+    uploadButton.disabled = false;
+    const file = fileInput.files[0];
+    if (file) {
+      currentFileName = file.name;
+      documentNameEl.textContent = currentFileName;
+      loadPDFFromFile(file);
+      // Enable navigation and zoom controls only after loading a file
+      enableViewerControls(false);
+    }
+  });
+
+  uploadButton.addEventListener('click', handleAuthClick);
+  generateLinkButton.addEventListener('click', generateShareableLink);
+
+  prevButton.addEventListener('click', () => {
+    if (currentPage > 1) {
+      currentPage--;
+      renderPage(currentPage);
+      updatePageNum();
+      highlightThumbnail(currentPage);
+    }
+  });
+
+  nextButton.addEventListener('click', () => {
+    if (currentPage < totalPages) {
+      currentPage++;
+      renderPage(currentPage);
+      updatePageNum();
+      highlightThumbnail(currentPage);
+    }
+  });
+
+  zoomInButton.addEventListener('click', () => {
+    if (currentZoom < 200) {
+      zoomBy(25);
+    }
+  });
+
+  zoomOutButton.addEventListener('click', () => {
+    if (currentZoom > 50) {
+      zoomBy(-25);
+    }
+  });
+
+  fitButton.addEventListener('click', () => {
+    currentZoom = 100;
+    scale = fitToPageScale;
+    zoomLevel.textContent = '100%';
+    renderPage(currentPage).then(() => {
+      pdfContent.scrollTop = 0;
+      pdfContent.scrollLeft = 0;
+    });
+  });
+
+  const panAmount = 150;
+  document.getElementById('pan-up').addEventListener('click', () => panBy(0, -panAmount));
+  document.getElementById('pan-down').addEventListener('click', () => panBy(0, panAmount));
+  document.getElementById('pan-left').addEventListener('click', () => panBy(-panAmount, 0));
+  document.getElementById('pan-right').addEventListener('click', () => panBy(panAmount, 0));
+
+  copyButton.addEventListener('click', () => {
+    navigator.clipboard.writeText(shareableLinkDiv.textContent).then(() => {
+      showStatus('Link copied to clipboard!', 'success');
+      setTimeout(() => {
+        shareableLinkModal.style.display = 'none';
+      }, 1000);
+    }).catch(() => {
+      // fallback
+      const tempInput = document.createElement('input');
+      document.body.appendChild(tempInput);
+      tempInput.value = shareableLinkDiv.textContent;
+      tempInput.select();
+      document.execCommand('copy');
+      document.body.removeChild(tempInput);
+      showStatus('Link copied to clipboard!', 'success');
+    });
+  });
+
+  window.onclick = function(event) {
+    if (event.target == shareableLinkModal) {
+      shareableLinkModal.style.display = 'none';
+    }
+  };
+
+  // === Authentication and Upload ===
+  async function handleAuthClick() {
+    tokenClient.callback = async (resp) => {
+      if (resp.error !== undefined) {
+        showError('Error during authentication', resp);
+        return;
+      }
+      await uploadFile();
+    };
+
+    if (gapi.client.getToken() === null) {
+      tokenClient.requestAccessToken({ prompt: 'consent' });
+    } else {
+      tokenClient.requestAccessToken({ prompt: '' });
+    }
+  }
+
+  async function uploadFile() {
+    const file = fileInput.files[0];
+    if (!file) {
+      showStatus('Please select a PDF file first.', 'error');
+      return;
+    }
+
+    const metadata = {
+      name: file.name,
+      mimeType: file.type,
+      parents: FOLDER_ID ? [FOLDER_ID] : []
+    };
+
+    try {
+      showStatus('Uploading file...', 'info');
+      const accessToken = gapi.auth.getToken().access_token;
+      const form = new FormData();
+      form.append('metadata', new Blob([JSON.stringify(metadata)], { type: 'application/json' }));
+      form.append('file', file);
+
+      const response = await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart', {
+        method: 'POST',
+        headers: new Headers({ 'Authorization': 'Bearer ' + accessToken }),
+        body: form
+      });
+
+      const result = await response.json();
+
+      if (response.ok) {
+        showStatus('File uploaded successfully!', 'success');
+        currentFileId = result.id;
+        generateLinkButton.disabled = false;
+
+        // Set file permission public
+        await setPublicPermission(currentFileId);
+      } else {
+        throw new Error(result.error.message);
+      }
+    } catch (err) {
+      showError('Error uploading file', err);
+    }
+  }
+
+  async function setPublicPermission(fileId) {
+    try {
+      const accessToken = gapi.auth.getToken().access_token;
+      const response = await fetch(`https://www.googleapis.com/drive/v3/files/${fileId}/permissions`, {
+        method: 'POST',
+        headers: new Headers({
+          'Authorization': 'Bearer ' + accessToken,
+          'Content-Type': 'application/json'
+        }),
+        body: JSON.stringify({
+          role: 'reader',
+          type: 'anyone'
+        })
+      });
+      if (!response.ok) {
+        const err = await response.json();
+        throw new Error(err.error.message);
+      }
+      showStatus('File permission set to public.', 'success');
+    } catch (error) {
+      showError('Error setting file permission', error);
+    }
+  }
+
+  // === Shareable Link Generation ===
+  function encrypt(text) {
+    return btoa(text);
+  }
+  function decrypt(text) {
+    return atob(text);
+  }
+  function generateShareableLink() {
+    if (!currentFileId) {
+      showStatus('No file has been uploaded yet.', 'error');
+      return;
+    }
+    const encryptedFileId = encrypt(currentFileId);
+    const currentUrl = window.location.href.split('?')[0];
+    const shareableLink = `${currentUrl}?fileId=${encodeURIComponent(encryptedFileId)}`;
+    shareableLinkDiv.textContent = shareableLink;
+    shareableLinkModal.style.display = 'block';
+  }
+
+  // === PDF.js Rendering Functions ===
+  function loadPDFFromFile(file) {
+    showLoading(true);
+    const fileReader = new FileReader();
+    fileReader.onload = function () {
+      const typedarray = new Uint8Array(this.result);
+      pdfjsLib.getDocument(typedarray).promise.then(loadPDF).catch(err => {
+        showError('Error loading PDF', err);
+        showLoading(false);
+      });
+    };
+    fileReader.readAsArrayBuffer(file);
+  }
+
+  async function loadPDF(pdf) {
+    currentPdf = pdf;
+    totalPages = pdf.numPages;
+    currentPage = 1;
+
+    await calculateFitScale();
+    await renderPage(currentPage);
+    updatePageNum();
+    generateThumbnails();
+
+    setTimeout(() => {
+      calculateFitScale().then(() => {
+        if (currentZoom === 100) {
+          renderPage(currentPage);
         }
-        function showStatus(msg, type){ const s=document.getElementById('statusMessage'); s.textContent=msg; s.className='show'; setTimeout(()=>s.className='',4000); }
-        // PDF.js helpers
-        function loadPDFFromFile(file){ const reader=new FileReader(); reader.onload=()=>{ const ua=new Uint8Array(reader.result); pdfjsLib.getDocument(ua).promise.then(onPDF).catch(e=>showStatus('PDF load error','error')); }; reader.readAsArrayBuffer(file); }
-        async function onPDF(pdf){ currentPdf=pdf; totalPages=pdf.numPages; currentPage=1; fitScale=await calcFit(); scale=fitScale; render(currentPage); genThumbs(); }
-        async function calcFit(){ const p=await currentPdf.getPage(1); const vp=p.getViewport({scale:1}); const cw=document.getElementById('pdf-content').clientWidth-40; const ch=document.getElementById('pdf-content').clientHeight-40; const s=Math.min(cw/vp.width, ch/vp.height); return Math.max(0.5, Math.min(s, 3)); }
-        async function render(pageNum){ const p=await currentPdf.getPage(pageNum); const vp=p.getViewport({scale}); const canvas=document.createElement('canvas'), ctx=canvas.getContext('2d'); const os=window.devicePixelRatio||1; canvas.width=Math.floor(vp.width*os); canvas.height=Math.floor(vp.height*os); canvas.style.width=Math.floor(vp.width)+'px'; const rc={canvasContext:ctx, viewport:vp, transform:os!==1?[os,0,0,os,0,0]:null}; await p.render(rc).promise; const c=document.getElementById('pdf-canvas-container'); c.innerHTML=''; c.appendChild(canvas); document.getElementById('page-num').textContent=`Page ${currentPage} of ${totalPages}`; }
-        async function genThumbs(){ const sb=document.getElementById('sidebar'); sb.innerHTML=''; for(let i=1;i<=totalPages;i++){ const d=document.createElement('div'); d.className='thumbnail'+(i===1?' active':''); const c=document.createElement('canvas'), ctx=c.getContext('2d'); const p=await currentPdf.getPage(i); const vp=p.getViewport({scale:0.3}); c.width=vp.width; c.height=vp.height; await p.render({canvasContext:ctx, viewport:vp}).promise; d.appendChild(c); const lbl=document.createElement('div'); lbl.className='page-label'; lbl.textContent=i; d.appendChild(lbl); d.onclick=()=>{ currentPage=i; render(i); document.querySelectorAll('.thumbnail').forEach((t,idx)=>t.classList.toggle('active',idx+1===i)); }; sb.appendChild(d); }
-        document.getElementById('prev').onclick=()=>{ if(currentPage>1){currentPage--; render(currentPage);} };
-        document.getElementById('next').onclick=()=>{ if(currentPage<totalPages){currentPage++; render(currentPage);} };
-        document.getElementById('zoom-in').onclick=()=>{ if(currentZoom<200){currentZoom+=25; scale=fitScale*(currentZoom/100); render(currentPage); document.getElementById('zoom-level').textContent=currentZoom+'%'; }};
-        document.getElementById('zoom-out').onclick=()=>{ if(currentZoom>50){currentZoom-=25; scale=fitScale*(currentZoom/100); render(currentPage); document.getElementById('zoom-level').textContent=currentZoom+'%'; }};
-        document.getElementById('fit-button').onclick=()=>{ currentZoom=100; scale=fitScale; render(currentPage); document.getElementById('zoom-level').textContent='100%'; };
-        // URL params loader
-        function checkURL(){ const params=new URLSearchParams(window.location.search); const id=params.get('fileId'); if(id){ loadFromDrive(id); }}
-        async function loadFromDrive(id){ showStatus('Loading shared file'); const r=await fetch(`https://www.googleapis.com/drive/v3/files/${id}?alt=media&key=${API_KEY}`); if(!r.ok) return showStatus('Fetch error','error'); const b=await r.blob(); const ua=new Uint8Array(await b.arrayBuffer()); pdfjsLib.getDocument(ua).promise.then(onPDF).catch(()=>showStatus('PDF load error','error')); }
-        // Init
-        gapiLoaded(); gisLoaded();
-    </script>
+      });
+    }, 100);
+
+    startProtection();
+    showLoading(false);
+    enableViewerControls(true);
+  }
+
+  async function calculateFitScale() {
+    const page = await currentPdf.getPage(1);
+    const viewport = page.getViewport({ scale: 1 });
+
+    const containerWidth = pdfContent.clientWidth - 40;
+    const containerHeight = pdfContent.clientHeight - 40;
+
+    const scaleX = containerWidth / viewport.width;
+    const scaleY = containerHeight / viewport.height;
+
+    fitToPageScale = Math.min(scaleX, scaleY);
+    if (fitToPageScale > 3) fitToPageScale = 3;
+    if (fitToPageScale < 0.5) fitToPageScale = 0.5;
+
+    scale = fitToPageScale;
+  }
+
+  async function renderPage(pageNumber) {
+    if (!currentPdf) return;
+    showLoading(true);
+    try {
+      const page = await currentPdf.getPage(pageNumber);
+      const viewport = page.getViewport({ scale: scale });
+
+      const canvas = document.createElement('canvas');
+      const context = canvas.getContext('2d');
+
+      const outputScale = window.devicePixelRatio || 1;
+      canvas.width = Math.floor(viewport.width * outputScale);
+      canvas.height = Math.floor(viewport.height * outputScale);
+      canvas.style.width = Math.floor(viewport.width) + "px";
+      canvas.style.height = Math.floor(viewport.height) + "px";
+
+      const transform = outputScale !== 1 ? [outputScale, 0, 0, outputScale, 0, 0] : null;
+
+      const renderContext = {
+        canvasContext: context,
+        transform: transform,
+        viewport: viewport,
+        renderInteractiveForms: true
+      };
+
+      await page.render(renderContext).promise;
+
+      pdfCanvasContainer.innerHTML = '';
+      pdfCanvasContainer.appendChild(canvas);
+
+      showLoading(false);
+      return true;
+    } catch (err) {
+      showError('Error rendering page', err);
+      showLoading(false);
+      return false;
+    }
+  }
+
+  async function generateThumbnails() {
+    sidebar.innerHTML = '';
+
+    for (let i = 1; i <= totalPages; i++) {
+      const thumbnailDiv = document.createElement('div');
+      thumbnailDiv.className = 'thumbnail';
+      if (i === 1) thumbnailDiv.classList.add('active');
+
+      const canvas = document.createElement('canvas');
+      const context = canvas.getContext('2d');
+
+      const page = await currentPdf.getPage(i);
+      const viewport = page.getViewport({ scale: 0.3 });
+
+      canvas.width = viewport.width;
+      canvas.height = viewport.height;
+
+      await page.render({
+        canvasContext: context,
+        viewport: viewport
+      }).promise;
+
+      thumbnailDiv.appendChild(canvas);
+
+      const label = document.createElement('div');
+      label.className = 'page-label';
+      label.textContent = i;
+      thumbnailDiv.appendChild(label);
+
+      thumbnailDiv.addEventListener('click', () => {
+        currentPage = i;
+        renderPage(currentPage);
+        updatePageNum();
+        highlightThumbnail(i);
+      });
+
+      sidebar.appendChild(thumbnailDiv);
+    }
+  }
+
+  function highlightThumbnail(pageNumber) {
+    document.querySelectorAll('.thumbnail').forEach((thumb, index) => {
+      if (index + 1 === pageNumber) {
+        thumb.classList.add('active');
+        thumb.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      } else {
+        thumb.classList.remove('active');
+      }
+    });
+  }
+
+  function updatePageNum() {
+    pageNum.textContent = `Page ${currentPage} of ${totalPages}`;
+    prevButton.disabled = currentPage === 1;
+    nextButton.disabled = currentPage === totalPages;
+  }
+
+  function zoomBy(amount) {
+    const centerX = pdfContent.scrollLeft + (pdfContent.clientWidth / 2);
+    const centerY = pdfContent.scrollTop + (pdfContent.clientHeight / 2);
+    const prevWidth = pdfContent.scrollWidth;
+    const prevHeight = pdfContent.scrollHeight;
+
+    currentZoom = Math.min(200, Math.max(50, currentZoom + amount));
+    scale = fitToPageScale * (currentZoom / 100);
+    zoomLevel.textContent = `${currentZoom}%`;
+
+    renderPage(currentPage).then(() => {
+      const newWidth = pdfContent.scrollWidth;
+      const newHeight = pdfContent.scrollHeight;
+      const scaleFactorX = newWidth / prevWidth;
+      const scaleFactorY = newHeight / prevHeight;
+
+      pdfContent.scrollLeft = (centerX * scaleFactorX) - (pdfContent.clientWidth / 2);
+      pdfContent.scrollTop = (centerY * scaleFactorY) - (pdfContent.clientHeight / 2);
+    });
+  }
+
+  function panBy(deltaX, deltaY) {
+    pdfContent.scrollLeft += deltaX;
+    pdfContent.scrollTop += deltaY;
+  }
+
+  // === Load PDF from Google Drive ===
+  async function loadPDFFromGoogleDrive(fileId) {
+    try {
+      showLoading(true);
+      const response = await fetch(`https://www.googleapis.com/drive/v3/files/${fileId}?alt=media&key=${API_KEY}`);
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch file from Google Drive');
+      }
+
+      documentNameEl.textContent = 'Protected Document';
+
+      const blob = await response.blob();
+      const arrayBuffer = await blob.arrayBuffer();
+      const typedarray = new Uint8Array(arrayBuffer);
+      pdfjsLib.getDocument(typedarray).promise.then(loadPDF).catch(err => {
+        showError('Error loading PDF', err);
+        showLoading(false);
+      });
+    } catch (error) {
+      showError('Error loading PDF from Google Drive', error);
+      showLoading(false);
+    }
+  }
+
+  // === URL Handling: load shared file ===
+  async function checkFileIdInURL() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const encryptedFileId = urlParams.get('fileId');
+    if (encryptedFileId) {
+      try {
+        const fileId = decrypt(decodeURIComponent(encryptedFileId));
+        showStatus('Loading shared file...', 'info');
+        await loadPDFFromGoogleDrive(fileId);
+        startProtection();
+        disableControls();
+      } catch (error) {
+        showError('Error decrypting file ID', error);
+      }
+    }
+  }
+
+  // Disable controls for shared view
+  function disableControls() {
+    document.body.classList.add('shared-view');
+    fileInput.disabled = true;
+    uploadButton.disabled = true;
+    generateLinkButton.disabled = true;
+    document.getElementById('fileInputLabel').style.display = 'none';
+    uploadButton.style.display = 'none';
+    generateLinkButton.style.display = 'none';
+
+    // Also disable navigation, zoom, pan controls for readonly mode
+    enableViewerControls(false);
+  }
+
+  // Enable or disable viewer controls
+  function enableViewerControls(enabled) {
+    prevButton.disabled = !enabled;
+    nextButton.disabled = !enabled;
+    zoomInButton.disabled = !enabled;
+    zoomOutButton.disabled = !enabled;
+    fitButton.disabled = !enabled;
+    document.getElementById('pan-up').disabled = !enabled;
+    document.getElementById('pan-down').disabled = !enabled;
+    document.getElementById('pan-left').disabled = !enabled;
+    document.getElementById('pan-right').disabled = !enabled;
+  }
+
+  // === Protection (copy/paste/print etc) handlers ===
+  function startProtection() {
+    protectionOverlay.style.display = 'flex';
+  }
+  function stopProtection() {
+    protectionOverlay.style.display = 'none';
+  }
+
+  pdfContent.addEventListener('mousemove', startProtection);
+  pdfContent.addEventListener('mouseleave', stopProtection);
+  document.getElementById('top-bar').addEventListener('mouseover', stopProtection);
+  document.getElementById('top-bar').addEventListener('mouseleave', startProtection);
+  sidebar.addEventListener('mouseover', stopProtection);
+  sidebar.addEventListener('mouseleave', startProtection);
+
+  document.addEventListener('keydown', (e) => {
+    startProtection();
+    // Prevent print, save, select all, copy, devtools, printscreen, and enter
+    if ((e.ctrlKey || e.metaKey) && ['p', 's', 'a', 'c'].includes(e.key.toLowerCase())) e.preventDefault();
+    if (e.key === 'PrintScreen' || e.key === 'Enter' || e.key === 'F12') e.preventDefault();
+    if ((e.ctrlKey || e.metaKey) && e.shiftKey && ['I', 'J', 'C'].includes(e.key.toUpperCase())) e.preventDefault();
+    // Prevent all other keys as well
+    e.preventDefault();
+  });
+  document.addEventListener('keyup', (e) => {
+    startProtection();
+    e.preventDefault();
+  });
+  document.addEventListener('contextmenu', e => e.preventDefault());
+  document.addEventListener('selectstart', e => {
+    if (e.target.tagName !== 'INPUT' && e.target.tagName !== 'TEXTAREA') e.preventDefault();
+  });
+  document.addEventListener('dragstart', e => e.preventDefault());
+  document.addEventListener('copy', e => e.preventDefault());
+  document.addEventListener('cut', e => e.preventDefault());
+
+  window.addEventListener('resize', () => {
+    if (currentPdf) {
+      calculateFitScale().then(() => {
+        scale = fitToPageScale * (currentZoom / 100);
+        renderPage(currentPage);
+      });
+    }
+  });
+
+  window.addEventListener('blur', startProtection);
+  window.addEventListener('focus', stopProtection);
+
+  // DevTools detection (basic)
+  let devtools = {open: false};
+  const threshold = 160;
+  setInterval(() => {
+    if (window.outerHeight - window.innerHeight > threshold || window.outerWidth - window.innerWidth > threshold) {
+      if (!devtools.open) {
+        devtools.open = true;
+        startProtection();
+        showStatus('Developer tools detected. Content protected.', 'error');
+      }
+    } else {
+      devtools.open = false;
+    }
+  }, 500);
+
+  // Status messages
+  function showStatus(message, type = 'info') {
+    statusMessageDiv.textContent = message;
+    statusMessageDiv.className = 'show';
+    if (type === 'error') statusMessageDiv.classList.add('error');
+    else if (type === 'success') statusMessageDiv.classList.add('success');
+    setTimeout(() => statusMessageDiv.classList.remove('show'), 4000);
+  }
+  function showError(message, error) {
+    console.error(message, error);
+    showStatus(`${message}: ${error.message || JSON.stringify(error)}`, 'error');
+  }
+
+  // Loading spinner
+  function showLoading(show) {
+    if (show) loadingSpinner.classList.add('show');
+    else loadingSpinner.classList.remove('show');
+  }
+
+  // Mobile redirect
+  function isMobile() {
+    const ua = navigator.userAgent || navigator.vendor || window.opera;
+    return /android|iPad|iPhone|iPod/.test(ua) && !window.MSStream;
+  }
+  function handleMobileRedirect() {
+    if (isMobile()) {
+      document.body.innerHTML = `
+        <div style="display:flex;align-items:center;justify-content:center;height:100vh;text-align:center;background-color:#0f0f0f;color:#f7f7f7;padding:20px;">
+          <div>
+            <h1 style="font-size:48px;margin-bottom:20px;">🚫</h1>
+            <h2 style="font-size:28px;margin-bottom:15px;">Access Denied</h2>
+            <p style="font-size:18px;opacity:0.8;max-width:400px;">This content is not accessible on mobile devices. Please use a desktop or laptop computer for security reasons.</p>
+          </div>
+        </div>`;
+    }
+  }
+
+  // Load shared file from URL param on page load
+  handleMobileRedirect();
+  startProtection();
+  gapiLoaded();
+  gisLoaded();
+
+</script>
+
+<script async defer src="https://apis.google.com/js/api.js" onload="gapiLoaded()"></script>
+<script async defer src="https://accounts.google.com/gsi/client" onload="gisLoaded()"></script>
+
 </body>
 </html>
