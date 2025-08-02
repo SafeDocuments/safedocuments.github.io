@@ -634,6 +634,8 @@
         let currentZoom = 100;
         let fitToPageScale = 1.5;
         let sidebarVisible = true;
+        let zoomInterval = null;
+        let panInterval = null;
         
         // DOM elements
         const uploadButton = document.getElementById('uploadButton');
@@ -742,81 +744,131 @@
             }
         });
 
-        // Fixed zoom controls
-        zoomInButton.addEventListener('click', async () => {
-            if (currentZoom < 200) {
-                // Save current viewport center
-                const viewportCenterX = pdfContent.scrollLeft + (pdfContent.clientWidth / 2);
-                const viewportCenterY = pdfContent.scrollTop + (pdfContent.clientHeight / 2);
-                
-                // Get current content dimensions
-                const oldContentWidth = pdfContent.scrollWidth;
-                const oldContentHeight = pdfContent.scrollHeight;
-                
-                // Calculate relative center position
-                const relativeCenterX = viewportCenterX / oldContentWidth;
-                const relativeCenterY = viewportCenterY / oldContentHeight;
-                
-                // Update zoom
-                currentZoom = Math.min(200, currentZoom + 25);
-                scale = fitToPageScale * (currentZoom / 100);
-                zoomLevel.textContent = `${currentZoom}%`;
-                
-                // Render and wait for completion
-                await renderPage(currentPage);
-                
-                // Force layout recalculation
-                await new Promise(resolve => requestAnimationFrame(resolve));
-                
-                // Get new content dimensions
-                const newContentWidth = pdfContent.scrollWidth;
-                const newContentHeight = pdfContent.scrollHeight;
-                
-                // Calculate new scroll position to maintain center
-                const newViewportCenterX = newContentWidth * relativeCenterX;
-                const newViewportCenterY = newContentHeight * relativeCenterY;
-                
-                pdfContent.scrollLeft = Math.max(0, newViewportCenterX - (pdfContent.clientWidth / 2));
-                pdfContent.scrollTop = Math.max(0, newViewportCenterY - (pdfContent.clientHeight / 2));
-            }
+        // Enhanced zoom controls with continuous zoom
+        let zoomHoldTimer = null;
+        let continuousZoom = false;
+
+        // Helper function for smooth zoom
+        async function performZoom(isZoomIn) {
+            const increment = continuousZoom ? 5 : 10;
+            const newZoom = isZoomIn 
+                ? Math.min(500, currentZoom + increment)
+                : Math.max(10, currentZoom - increment);
+            
+            if (newZoom === currentZoom) return;
+
+            // Save current viewport center
+            const viewportCenterX = pdfContent.scrollLeft + (pdfContent.clientWidth / 2);
+            const viewportCenterY = pdfContent.scrollTop + (pdfContent.clientHeight / 2);
+            
+            // Get current content dimensions
+            const oldContentWidth = pdfContent.scrollWidth;
+            const oldContentHeight = pdfContent.scrollHeight;
+            
+            // Calculate relative center position
+            const relativeCenterX = viewportCenterX / oldContentWidth;
+            const relativeCenterY = viewportCenterY / oldContentHeight;
+            
+            // Update zoom
+            currentZoom = newZoom;
+            scale = fitToPageScale * (currentZoom / 100);
+            zoomLevel.textContent = `${currentZoom}%`;
+            
+            // Render and wait for completion
+            await renderPage(currentPage);
+            
+            // Force layout recalculation
+            await new Promise(resolve => requestAnimationFrame(resolve));
+            
+            // Get new content dimensions
+            const newContentWidth = pdfContent.scrollWidth;
+            const newContentHeight = pdfContent.scrollHeight;
+            
+            // Calculate new scroll position to maintain center
+            const newViewportCenterX = newContentWidth * relativeCenterX;
+            const newViewportCenterY = newContentHeight * relativeCenterY;
+            
+            pdfContent.scrollLeft = Math.max(0, newViewportCenterX - (pdfContent.clientWidth / 2));
+            pdfContent.scrollTop = Math.max(0, newViewportCenterY - (pdfContent.clientHeight / 2));
+        }
+
+        // Zoom In with hold detection
+        zoomInButton.addEventListener('mousedown', async (e) => {
+            e.preventDefault();
+            continuousZoom = false;
+            
+            // Initial zoom
+            await performZoom(true);
+            
+            // Start continuous zoom after 250ms
+            zoomHoldTimer = setTimeout(() => {
+                continuousZoom = true;
+                zoomInterval = setInterval(() => {
+                    performZoom(true);
+                }, 100);
+            }, 250);
         });
 
-        zoomOutButton.addEventListener('click', async () => {
-            if (currentZoom > 50) {
-                // Save current viewport center
-                const viewportCenterX = pdfContent.scrollLeft + (pdfContent.clientWidth / 2);
-                const viewportCenterY = pdfContent.scrollTop + (pdfContent.clientHeight / 2);
-                
-                // Get current content dimensions
-                const oldContentWidth = pdfContent.scrollWidth;
-                const oldContentHeight = pdfContent.scrollHeight;
-                
-                // Calculate relative center position
-                const relativeCenterX = viewportCenterX / oldContentWidth;
-                const relativeCenterY = viewportCenterY / oldContentHeight;
-                
-                // Update zoom
-                currentZoom = Math.max(50, currentZoom - 25);
-                scale = fitToPageScale * (currentZoom / 100);
-                zoomLevel.textContent = `${currentZoom}%`;
-                
-                // Render and wait for completion
-                await renderPage(currentPage);
-                
-                // Force layout recalculation
-                await new Promise(resolve => requestAnimationFrame(resolve));
-                
-                // Get new content dimensions
-                const newContentWidth = pdfContent.scrollWidth;
-                const newContentHeight = pdfContent.scrollHeight;
-                
-                // Calculate new scroll position to maintain center
-                const newViewportCenterX = newContentWidth * relativeCenterX;
-                const newViewportCenterY = newContentHeight * relativeCenterY;
-                
-                pdfContent.scrollLeft = Math.max(0, newViewportCenterX - (pdfContent.clientWidth / 2));
-                pdfContent.scrollTop = Math.max(0, newViewportCenterY - (pdfContent.clientHeight / 2));
-            }
+        zoomInButton.addEventListener('mouseup', () => {
+            clearTimeout(zoomHoldTimer);
+            clearInterval(zoomInterval);
+            continuousZoom = false;
+        });
+
+        zoomInButton.addEventListener('mouseleave', () => {
+            clearTimeout(zoomHoldTimer);
+            clearInterval(zoomInterval);
+            continuousZoom = false;
+        });
+
+        // Zoom Out with hold detection
+        zoomOutButton.addEventListener('mousedown', async (e) => {
+            e.preventDefault();
+            continuousZoom = false;
+            
+            // Initial zoom
+            await performZoom(false);
+            
+            // Start continuous zoom after 250ms
+            zoomHoldTimer = setTimeout(() => {
+                continuousZoom = true;
+                zoomInterval = setInterval(() => {
+                    performZoom(false);
+                }, 100);
+            }, 250);
+        });
+
+        zoomOutButton.addEventListener('mouseup', () => {
+            clearTimeout(zoomHoldTimer);
+            clearInterval(zoomInterval);
+            continuousZoom = false;
+        });
+
+        zoomOutButton.addEventListener('mouseleave', () => {
+            clearTimeout(zoomHoldTimer);
+            clearInterval(zoomInterval);
+            continuousZoom = false;
+        });
+
+        // Touch support for mobile
+        zoomInButton.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            zoomInButton.dispatchEvent(new MouseEvent('mousedown'));
+        });
+
+        zoomInButton.addEventListener('touchend', (e) => {
+            e.preventDefault();
+            zoomInButton.dispatchEvent(new MouseEvent('mouseup'));
+        });
+
+        zoomOutButton.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            zoomOutButton.dispatchEvent(new MouseEvent('mousedown'));
+        });
+
+        zoomOutButton.addEventListener('touchend', (e) => {
+            e.preventDefault();
+            zoomOutButton.dispatchEvent(new MouseEvent('mouseup'));
         });
 
         fitButton.addEventListener('click', async () => {
@@ -1155,83 +1207,86 @@
             protectionOverlay.style.display = 'none';
         }
 
-        // Fixed pan controls
+        // Enhanced pan controls with smooth incremental scrolling
         const panUp = document.getElementById('pan-up');
         const panDown = document.getElementById('pan-down');
         const panLeft = document.getElementById('pan-left');
         const panRight = document.getElementById('pan-right');
 
-        panUp.addEventListener('click', (e) => {
-            e.preventDefault();
-            e.stopPropagation();
+        // Helper function for smooth pan
+        function performPan(direction) {
+            // Dynamic pan amount based on zoom level
+            // At high zoom, move less; at low zoom, move more
+            const zoomFactor = Math.max(0.1, Math.min(1, 200 / currentZoom));
+            const basePanAmount = 50; // Base movement in pixels
+            const panAmount = Math.floor(basePanAmount * zoomFactor);
             
-            // Force scroll to absolute top
-            pdfContent.scrollTop = 0;
-            
-            // Multiple attempts to ensure it sticks
-            requestAnimationFrame(() => {
-                pdfContent.scrollTop = 0;
-            });
-            
-            setTimeout(() => {
-                pdfContent.scrollTop = 0;
-            }, 50);
-        });
+            switch(direction) {
+                case 'up':
+                    pdfContent.scrollBy({ top: -panAmount, behavior: 'auto' });
+                    break;
+                case 'down':
+                    pdfContent.scrollBy({ top: panAmount, behavior: 'auto' });
+                    break;
+                case 'left':
+                    pdfContent.scrollBy({ left: -panAmount, behavior: 'auto' });
+                    break;
+                case 'right':
+                    pdfContent.scrollBy({ left: panAmount, behavior: 'auto' });
+                    break;
+            }
+        }
 
-        panDown.addEventListener('click', (e) => {
-            e.preventDefault();
-            e.stopPropagation();
+        // Helper to setup pan button with continuous scrolling
+        function setupPanButton(button, direction) {
+            let panHoldTimer = null;
+            let continuousPan = false;
             
-            // Calculate and force scroll to absolute bottom
-            const maxScroll = pdfContent.scrollHeight - pdfContent.clientHeight;
-            pdfContent.scrollTop = maxScroll;
-            
-            // Multiple attempts to ensure it sticks
-            requestAnimationFrame(() => {
-                pdfContent.scrollTop = maxScroll;
+            button.addEventListener('mousedown', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                
+                // Initial pan
+                performPan(direction);
+                
+                // Start continuous pan after 250ms
+                panHoldTimer = setTimeout(() => {
+                    continuousPan = true;
+                    panInterval = setInterval(() => {
+                        performPan(direction);
+                    }, 50); // Pan every 50ms for smooth movement
+                }, 250);
             });
             
-            setTimeout(() => {
-                const newMax = pdfContent.scrollHeight - pdfContent.clientHeight;
-                pdfContent.scrollTop = newMax;
-            }, 50);
-        });
+            button.addEventListener('mouseup', () => {
+                clearTimeout(panHoldTimer);
+                clearInterval(panInterval);
+                continuousPan = false;
+            });
+            
+            button.addEventListener('mouseleave', () => {
+                clearTimeout(panHoldTimer);
+                clearInterval(panInterval);
+                continuousPan = false;
+            });
+            
+            // Touch support
+            button.addEventListener('touchstart', (e) => {
+                e.preventDefault();
+                button.dispatchEvent(new MouseEvent('mousedown'));
+            });
+            
+            button.addEventListener('touchend', (e) => {
+                e.preventDefault();
+                button.dispatchEvent(new MouseEvent('mouseup'));
+            });
+        }
 
-        panLeft.addEventListener('click', (e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            
-            // Force scroll to absolute left
-            pdfContent.scrollLeft = 0;
-            
-            // Multiple attempts to ensure it sticks
-            requestAnimationFrame(() => {
-                pdfContent.scrollLeft = 0;
-            });
-            
-            setTimeout(() => {
-                pdfContent.scrollLeft = 0;
-            }, 50);
-        });
-
-        panRight.addEventListener('click', (e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            
-            // Calculate and force scroll to absolute right
-            const maxScroll = pdfContent.scrollWidth - pdfContent.clientWidth;
-            pdfContent.scrollLeft = maxScroll;
-            
-            // Multiple attempts to ensure it sticks
-            requestAnimationFrame(() => {
-                pdfContent.scrollLeft = maxScroll;
-            });
-            
-            setTimeout(() => {
-                const newMax = pdfContent.scrollWidth - pdfContent.clientWidth;
-                pdfContent.scrollLeft = newMax;
-            }, 50);
-        });
+        // Setup all pan buttons
+        setupPanButton(panUp, 'up');
+        setupPanButton(panDown, 'down');
+        setupPanButton(panLeft, 'left');
+        setupPanButton(panRight, 'right');
 
         // Protection event listeners
         pdfContent.addEventListener('mousemove', startProtection);
