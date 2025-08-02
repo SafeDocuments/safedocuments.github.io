@@ -1025,13 +1025,12 @@
         const panRight = document.getElementById('pan-right');
         const panAmount = 150; // Increased for better navigation
 
-        panUp.addEventListener('click', (e) => {
+panUp.addEventListener('click', (e) => {
     e.stopPropagation();
     e.preventDefault();
     if (pdfContent.scrollHeight <= pdfContent.clientHeight) return; // no scroll possible
-pdfContent.scrollBy({ top: -panAmount, behavior: 'smooth' });
-        });
-
+    pdfContent.scrollTo({ top: 0, behavior: 'smooth' });
+});
 
         panDown.addEventListener('click', (e) => {
             e.stopPropagation();
