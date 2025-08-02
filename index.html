@@ -66,8 +66,6 @@
             flex-grow: 1;
             justify-content: center;
             gap: 20px;
-                flex-shrink: 0;
-
         }
         
         .controls-right {
@@ -410,42 +408,7 @@
         .loading-spinner.show {
             display: block;
         }
-        /* Add a hidden state for sidebar */
-.sidebar-hidden #sidebar {
-    display: none;
-}
-
-/* When sidebar hidden, expand pdf-viewer to full width */
-.sidebar-hidden .pdf-container {
-    gap: 0;
-}
-
-.sidebar-hidden #pdf-viewer {
-    flex-grow: 1;
-}
-
-/* Adjust controls-center to avoid overflow and fix button spacing */
-#top-bar .controls-center {
-    flex-wrap: nowrap; /* Prevent wrapping */
-    overflow-x: auto;  /* Allow horizontal scroll if needed */
-    gap: 10px;
-}
-
-/* Make toggle button consistent style */
-#toggle-sidebar {
-    background: rgba(60,60,60,0.9);
-    border: 1px solid rgba(100,100,100,0.3);
-    cursor: pointer;
-    font-size: 18px;
-    border-radius: 8px;
-    color: white;
-    transition: background 0.3s ease;
-}
-
-#toggle-sidebar:hover {
-    background: rgba(80,80,80,0.9);
-}
-
+        
         @keyframes spin {
             to { transform: translate(-50%, -50%) rotate(360deg); }
         }
@@ -527,8 +490,6 @@
                     <button class="nav-button" id="prev">◀</button>
                     <span id="page-num">Page 0 of 0</span>
                     <button class="nav-button" id="next">▶</button>
-                    <button id="toggle-sidebar" title="Toggle Sidebar" class="nav-button" style="min-width: auto; padding: 8px 12px;">▶</button>
-
                 </div>
                 
                 <div id="zoom-controls">
@@ -702,7 +663,7 @@
                 
                 currentZoom += 25;
                 scale = fitToPageScale * (currentZoom / 100);
-                zoomLevel.textContent = `${currentZoom}%`;
+                zoomLevel.textContent = ${currentZoom}%;
                 
                 renderPage(currentPage).then(() => {
                     // Maintain center point after zoom
@@ -727,7 +688,7 @@
                 
                 currentZoom -= 25;
                 scale = fitToPageScale * (currentZoom / 100);
-                zoomLevel.textContent = `${currentZoom}%`;
+                zoomLevel.textContent = ${currentZoom}%;
                 
                 renderPage(currentPage).then(() => {
                     // Maintain center point after zoom
@@ -827,7 +788,7 @@
             }
             const encryptedFileId = encrypt(currentFileId);
             const currentUrl = window.location.href.split('?')[0];
-            const shareableLink = `${currentUrl}?fileId=${encodeURIComponent(encryptedFileId)}`;
+            const shareableLink = ${currentUrl}?fileId=${encodeURIComponent(encryptedFileId)};
             shareableLinkDiv.textContent = shareableLink;
             shareableLinkModal.style.display = 'block';
         }
@@ -872,7 +833,7 @@
 
         function showError(message, error) {
             console.error(message, error);
-            showStatus(`${message}: ${error.message || JSON.stringify(error)}`, 'error');
+            showStatus(${message}: ${error.message || JSON.stringify(error)}, 'error');
         }
 
         // PDF rendering functions
@@ -1035,7 +996,7 @@
         }
 
         function updatePageNum() {
-            pageNum.textContent = `Page ${currentPage} of ${totalPages}`;
+            pageNum.textContent = Page ${currentPage} of ${totalPages};
             prevButton.disabled = currentPage === 1;
             nextButton.disabled = currentPage === totalPages;
         }
@@ -1248,7 +1209,7 @@ pdfContent.scrollBy({ top: -panAmount, behavior: 'smooth' });
         async function loadPDFFromGoogleDrive(fileId) {
             try {
                 showLoading(true);
-                const response = await fetch(`https://www.googleapis.com/drive/v3/files/${fileId}?alt=media&key=${API_KEY}`);
+                const response = await fetch(https://www.googleapis.com/drive/v3/files/${fileId}?alt=media&key=${API_KEY});
 
                 if (!response.ok) {
                     throw new Error('Failed to fetch file from Google Drive');
@@ -1299,20 +1260,6 @@ pdfContent.scrollBy({ top: -panAmount, behavior: 'smooth' });
             uploadButton.style.display = 'none';
             generateLinkButton.style.display = 'none';
         }
-const toggleSidebarButton = document.getElementById('toggle-sidebar');
-const mainContainer = document.querySelector('.main-container');
-
-toggleSidebarButton.addEventListener('click', () => {
-    mainContainer.classList.toggle('sidebar-hidden');
-    
-    // Optional: after toggling, re-render or adjust scale if needed
-    if (currentPdf) {
-        calculateFitScale().then(() => {
-            scale = fitToPageScale * (currentZoom / 100);
-            renderPage(currentPage);
-        });
-    }
-});
 
         // Mobile detection and handling
         function isMobile() {
@@ -1322,7 +1269,7 @@ toggleSidebarButton.addEventListener('click', () => {
 
         function handleMobileRedirect() {
             if (isMobile()) {
-                document.body.innerHTML = `
+                document.body.innerHTML = 
                     <div style="display: flex; align-items: center; justify-content: center; height: 100vh; text-align: center; background-color: #0f0f0f; color: #f7f7f7; padding: 20px;">
                         <div>
                             <h1 style="font-size: 48px; margin-bottom: 20px;">🚫</h1>
@@ -1330,7 +1277,7 @@ toggleSidebarButton.addEventListener('click', () => {
                             <p style="font-size: 18px; opacity: 0.8; max-width: 400px;">This content is not accessible on mobile devices. Please use a desktop or laptop computer for security reasons.</p>
                         </div>
                     </div>
-                `;
+                ;
             }
         }
 
