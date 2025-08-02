@@ -78,10 +78,9 @@
             display: none;
         }
         
-      body.shared-view #sidebar {
-    display: block !important;
-}
-
+        body.shared-view #sidebar {
+            display: none;
+        }
         
         body.shared-view .controls-center {
             justify-content: flex-start;
@@ -663,7 +662,7 @@
                 
                 currentZoom += 25;
                 scale = fitToPageScale * (currentZoom / 100);
-                zoomLevel.textContent = ${currentZoom}%;
+                zoomLevel.textContent = `${currentZoom}%`;
                 
                 renderPage(currentPage).then(() => {
                     // Maintain center point after zoom
@@ -688,7 +687,7 @@
                 
                 currentZoom -= 25;
                 scale = fitToPageScale * (currentZoom / 100);
-                zoomLevel.textContent = ${currentZoom}%;
+                zoomLevel.textContent = `${currentZoom}%`;
                 
                 renderPage(currentPage).then(() => {
                     // Maintain center point after zoom
@@ -788,7 +787,7 @@
             }
             const encryptedFileId = encrypt(currentFileId);
             const currentUrl = window.location.href.split('?')[0];
-            const shareableLink = ${currentUrl}?fileId=${encodeURIComponent(encryptedFileId)};
+            const shareableLink = `${currentUrl}?fileId=${encodeURIComponent(encryptedFileId)}`;
             shareableLinkDiv.textContent = shareableLink;
             shareableLinkModal.style.display = 'block';
         }
@@ -833,7 +832,7 @@
 
         function showError(message, error) {
             console.error(message, error);
-            showStatus(${message}: ${error.message || JSON.stringify(error)}, 'error');
+            showStatus(`${message}: ${error.message || JSON.stringify(error)}`, 'error');
         }
 
         // PDF rendering functions
@@ -996,7 +995,7 @@
         }
 
         function updatePageNum() {
-            pageNum.textContent = Page ${currentPage} of ${totalPages};
+            pageNum.textContent = `Page ${currentPage} of ${totalPages}`;
             prevButton.disabled = currentPage === 1;
             nextButton.disabled = currentPage === totalPages;
         }
@@ -1025,12 +1024,12 @@
         const panRight = document.getElementById('pan-right');
         const panAmount = 150; // Increased for better navigation
 
-panUp.addEventListener('click', (e) => {
-    e.stopPropagation();
-    e.preventDefault();
-    if (pdfContent.scrollHeight <= pdfContent.clientHeight) return; // no scroll possible
-    pdfContent.scrollTo({ top: 0, behavior: 'smooth' });
-});
+        panUp.addEventListener('click', (e) => {
+            e.stopPropagation();
+            e.preventDefault();
+            const currentScroll = pdfContent.scrollTop;
+            pdfContent.scrollTop = Math.max(0, currentScroll - panAmount);
+        });
 
         panDown.addEventListener('click', (e) => {
             e.stopPropagation();
@@ -1208,7 +1207,7 @@ panUp.addEventListener('click', (e) => {
         async function loadPDFFromGoogleDrive(fileId) {
             try {
                 showLoading(true);
-                const response = await fetch(https://www.googleapis.com/drive/v3/files/${fileId}?alt=media&key=${API_KEY});
+                const response = await fetch(`https://www.googleapis.com/drive/v3/files/${fileId}?alt=media&key=${API_KEY}`);
 
                 if (!response.ok) {
                     throw new Error('Failed to fetch file from Google Drive');
@@ -1268,7 +1267,7 @@ panUp.addEventListener('click', (e) => {
 
         function handleMobileRedirect() {
             if (isMobile()) {
-                document.body.innerHTML = 
+                document.body.innerHTML = `
                     <div style="display: flex; align-items: center; justify-content: center; height: 100vh; text-align: center; background-color: #0f0f0f; color: #f7f7f7; padding: 20px;">
                         <div>
                             <h1 style="font-size: 48px; margin-bottom: 20px;">🚫</h1>
@@ -1276,7 +1275,7 @@ panUp.addEventListener('click', (e) => {
                             <p style="font-size: 18px; opacity: 0.8; max-width: 400px;">This content is not accessible on mobile devices. Please use a desktop or laptop computer for security reasons.</p>
                         </div>
                     </div>
-                ;
+                `;
             }
         }
 
