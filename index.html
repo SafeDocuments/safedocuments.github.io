@@ -437,7 +437,7 @@
             font-size: 13px;
         }
         
-        /* Status Message - Enhanced positioning */
+        /* Status Message */
         #statusMessage {
             position: fixed;
             bottom: 20px;
@@ -448,8 +448,7 @@
             box-shadow: 0 4px 6px rgba(0,0,0,0.3);
             display: none;
             max-width: 300px;
-            z-index: 1200;
-            pointer-events: none;
+            z-index: 1100;
         }
         
         #statusMessage.show {
@@ -814,21 +813,8 @@
             }
         });
 
-        // GAPI initialization with retry logic
-        let gapiLoadRetries = 0;
-        const maxGapiRetries = 3;
-        
+        // GAPI initialization
         function gapiLoaded() {
-            if (typeof gapi === 'undefined') {
-                gapiLoadRetries++;
-                if (gapiLoadRetries < maxGapiRetries) {
-                    console.log(`GAPI not loaded, retrying... (${gapiLoadRetries}/${maxGapiRetries})`);
-                    setTimeout(gapiLoaded, 2000);
-                } else {
-                    showError('Google API failed to load', new Error('Please check your internet connection and refresh the page'));
-                }
-                return;
-            }
             gapi.load('client', initializeGapiClient);
         }
 
@@ -843,41 +829,17 @@
                 checkFileIdInURL();
             } catch (err) {
                 showError('Error initializing GAPI client', err);
-                // Retry initialization after 3 seconds
-                setTimeout(async () => {
-                    try {
-                        await gapi.client.init({
-                            apiKey: API_KEY,
-                            discoveryDocs: [DISCOVERY_DOC],
-                        });
-                        gapiInited = true;
-                        maybeEnableButtons();
-                        checkFileIdInURL();
-                        showStatus('Google API initialized successfully on retry', 'success');
-                    } catch (retryErr) {
-                        showError('Failed to initialize Google API after retry', retryErr);
-                    }
-                }, 3000);
             }
         }
 
         function gisLoaded() {
-            if (typeof google === 'undefined' || !google.accounts) {
-                setTimeout(gisLoaded, 2000);
-                return;
-            }
-            
-            try {
-                tokenClient = google.accounts.oauth2.initTokenClient({
-                    client_id: CLIENT_ID,
-                    scope: SCOPES,
-                    callback: '',
-                });
-                gisInited = true;
-                maybeEnableButtons();
-            } catch (err) {
-                showError('Error initializing Google Identity Services', err);
-            }
+            tokenClient = google.accounts.oauth2.initTokenClient({
+                client_id: CLIENT_ID,
+                scope: SCOPES,
+                callback: '',
+            });
+            gisInited = true;
+            maybeEnableButtons();
         }
 
         function maybeEnableButtons() {
@@ -1491,61 +1453,7 @@
         setupPanButton(panLeft, 'left');
         setupPanButton(panRight, 'right');
 
-        // Protection event listeners with enhanced security
-        let protectionTimeout;
-        let lastMouseMove = Date.now();
-        let mouseVelocity = 0;
-        let lastMouseX = 0;
-        let lastMouseY = 0;
-        
-        // Enhanced mouse movement detection
-        document.addEventListener('mousemove', (e) => {
-            const currentTime = Date.now();
-            const timeDiff = currentTime - lastMouseMove;
-            
-            // Calculate mouse velocity
-            const deltaX = e.clientX - lastMouseX;
-            const deltaY = e.clientY - lastMouseY;
-            const distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
-            mouseVelocity = distance / Math.max(timeDiff, 1);
-            
-            lastMouseX = e.clientX;
-            lastMouseY = e.clientY;
-            lastMouseMove = currentTime;
-            
-            // If mouse is moving fast, immediately protect
-            if (mouseVelocity > 5) {
-                startProtection();
-                clearTimeout(protectionTimeout);
-                protectionTimeout = setTimeout(() => {
-                    if (mouseVelocity < 2) {
-                        stopProtection();
-                    }
-                }, 1000);
-            }
-        });
-        
-        // Prevent rapid clicking
-        let clickCount = 0;
-        let clickResetTimeout;
-        
-        document.addEventListener('click', (e) => {
-            clickCount++;
-            
-            if (clickCount > 2) {
-                e.preventDefault();
-                e.stopPropagation();
-                startProtection();
-                return false;
-            }
-            
-            clearTimeout(clickResetTimeout);
-            clickResetTimeout = setTimeout(() => {
-                clickCount = 0;
-            }, 500);
-        });
-        
-        // Original protection listeners
+        // Protection event listeners
         pdfContent.addEventListener('mousemove', startProtection);
         pdfContent.addEventListener('mouseleave', stopProtection);
 
@@ -1572,7 +1480,6 @@
             // PrintScreen protection
             if (e.key === 'PrintScreen') {
                 e.preventDefault();
-                navigator.clipboard.writeText(''); // Clear clipboard
                 return false;
             }
             
@@ -1590,18 +1497,6 @@
             
             // Copy protection
             if ((e.ctrlKey || e.metaKey) && e.key === 'c') {
-                e.preventDefault();
-                return false;
-            }
-            
-            // Cut protection
-            if ((e.ctrlKey || e.metaKey) && e.key === 'x') {
-                e.preventDefault();
-                return false;
-            }
-            
-            // Paste protection
-            if ((e.ctrlKey || e.metaKey) && e.key === 'v') {
                 e.preventDefault();
                 return false;
             }
@@ -1626,12 +1521,6 @@
             
             // Ctrl+Shift+C Element Inspector protection
             if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key === 'C') {
-                e.preventDefault();
-                return false;
-            }
-            
-            // Ctrl+U View Source protection
-            if ((e.ctrlKey || e.metaKey) && e.key === 'u') {
                 e.preventDefault();
                 return false;
             }
@@ -1715,33 +1604,14 @@
             }
         }, 500);
 
-        // Load PDF from Google Drive with better error handling
+        // Load PDF from Google Drive
         async function loadPDFFromGoogleDrive(fileId) {
             try {
                 showLoading(true);
-                showStatus('Connecting to Google Drive...', 'info');
-                
-                // First attempt
-                let response = await fetch(`https://www.googleapis.com/drive/v3/files/${fileId}?alt=media&key=${API_KEY}`);
+                const response = await fetch(`https://www.googleapis.com/drive/v3/files/${fileId}?alt=media&key=${API_KEY}`);
 
-                // If first attempt fails, retry with timeout
                 if (!response.ok) {
-                    if (response.status === 403) {
-                        throw new Error('Access denied. The file may be private or the link may be invalid.');
-                    } else if (response.status === 404) {
-                        throw new Error('File not found. The file may have been deleted or moved.');
-                    } else if (response.status === 401) {
-                        throw new Error('Authentication failed. Please check the API configuration.');
-                    }
-                    
-                    // Retry once after 2 seconds
-                    showStatus('Connection failed, retrying...', 'info');
-                    await new Promise(resolve => setTimeout(resolve, 2000));
-                    response = await fetch(`https://www.googleapis.com/drive/v3/files/${fileId}?alt=media&key=${API_KEY}`);
-                    
-                    if (!response.ok) {
-                        throw new Error(`Failed to fetch file from Google Drive (Status: ${response.status})`);
-                    }
+                    throw new Error('Failed to fetch file from Google Drive');
                 }
 
                 // Set document name for shared files
@@ -1750,8 +1620,6 @@
                 const blob = await response.blob();
                 const arrayBuffer = await blob.arrayBuffer();
                 const typedarray = new Uint8Array(arrayBuffer);
-                
-                showStatus('Loading PDF...', 'info');
                 pdfjsLib.getDocument(typedarray).promise.then(loadPDF).catch(err => {
                     showError('Error loading PDF', err);
                     showLoading(false);
@@ -1759,19 +1627,10 @@
             } catch (error) {
                 showError('Error loading PDF from Google Drive', error);
                 showLoading(false);
-                
-                // Provide user guidance
-                if (error.message.includes('Access denied')) {
-                    showStatus('Please ensure the file is shared publicly or check your link.', 'error');
-                } else if (error.message.includes('File not found')) {
-                    showStatus('The requested file could not be found.', 'error');
-                } else {
-                    showStatus('Failed to load the document. Please try refreshing the page.', 'error');
-                }
             }
         }
 
-        // Check for file ID in URL - works even without Google APIs for viewing
+        // Check for file ID in URL
         async function checkFileIdInURL() {
             const urlParams = new URLSearchParams(window.location.search);
             const encryptedFileId = urlParams.get('fileId');
@@ -1779,28 +1638,7 @@
                 try {
                     const fileId = decrypt(decodeURIComponent(encryptedFileId));
                     showStatus('Loading shared file...', 'info');
-                    
-                    // If Google APIs failed to load, try direct fetch
-                    if (!gapiInited) {
-                        console.log('Attempting to load file without GAPI...');
-                        // Try alternative loading method
-                        const testUrl = `https://www.googleapis.com/drive/v3/files/${fileId}?alt=media&key=${API_KEY}`;
-                        
-                        // Test if we can access Google Drive directly
-                        try {
-                            const testResponse = await fetch(testUrl, { method: 'HEAD' });
-                            if (testResponse.ok || testResponse.status === 200) {
-                                await loadPDFFromGoogleDrive(fileId);
-                            } else {
-                                throw new Error('Cannot access Google Drive');
-                            }
-                        } catch (fetchError) {
-                            showError('Cannot load shared file', new Error('Google services are not accessible. This might be due to network restrictions.'));
-                        }
-                    } else {
-                        await loadPDFFromGoogleDrive(fileId);
-                    }
-                    
+                    await loadPDFFromGoogleDrive(fileId);
                     startProtection();
                     disableControls();
                 } catch (error) {
@@ -1843,153 +1681,23 @@
             }
         }
 
-        // Additional security measures
-        
-        // Disable text selection globally
-        document.body.style.userSelect = 'none';
-        document.body.style.webkitUserSelect = 'none';
-        document.body.style.mozUserSelect = 'none';
-        document.body.style.msUserSelect = 'none';
-        
-        // Prevent print via CSS
-        const style = document.createElement('style');
-        style.textContent = `
-            @media print {
-                body { display: none !important; }
-            }
-        `;
-        document.head.appendChild(style);
-        
-        // Disable right-click on images and canvases
-        document.addEventListener('mousedown', function(e) {
-            if (e.target.tagName === 'CANVAS' || e.target.tagName === 'IMG') {
-                if (e.button === 2) {
-                    e.preventDefault();
-                    return false;
-                }
-            }
-        });
-        
-        // Prevent screenshot extensions
-        document.addEventListener('visibilitychange', function() {
-            if (document.hidden) {
+        // Mouse wheel zoom (disabled when protection is active)
+        pdfContent.addEventListener('wheel', function(e) {
+            if (e.ctrlKey || e.metaKey) {
+                e.preventDefault();
                 startProtection();
             }
-        });
-        
-        // Detect and prevent automation tools
-        let isAutomated = false;
-        
-        Object.defineProperty(navigator, 'webdriver', {
-            get: () => {
-                isAutomated = true;
-                startProtection();
-                return undefined;
-            }
-        });
-        
-        // Detect headless browsers
-        if (navigator.userAgent.includes('HeadlessChrome')) {
-            isAutomated = true;
-            startProtection();
-        }
-        
-        // Prevent console opening via object logging
-        const element = new Image();
-        Object.defineProperty(element, 'id', {
-            get: function() {
-                startProtection();
-                showStatus('Developer tools detected. Content protected.', 'error');
-            }
-        });
-        console.log('%c', element);
-        
-        // Clear console periodically
-        setInterval(() => {
-            if (typeof console.clear === 'function') {
-                console.clear();
-            }
-        }, 1000);
+        }, { passive: false });
 
-        // Script loading helper
-        function loadScript(src, onLoad, onError) {
-            const script = document.createElement('script');
-            script.src = src;
-            script.async = true;
-            script.defer = true;
-            
-            script.onload = onLoad;
-            script.onerror = () => {
-                console.error(`Failed to load script: ${src}`);
-                if (onError) onError();
-            };
-            
-            document.head.appendChild(script);
-        }
+        // Initialize protection and mobile check
+        handleMobileRedirect();
+        startProtection();
         
-        // Initialize Google APIs with dynamic loading
-        function initializeGoogleAPIs() {
-            // Try to load GAPI
-            if (typeof gapi === 'undefined') {
-                console.log('Loading Google API...');
-                loadScript(
-                    'https://apis.google.com/js/api.js',
-                    () => {
-                        console.log('Google API loaded successfully');
-                        if (typeof gapiLoaded === 'function') {
-                            gapiLoaded();
-                        }
-                    },
-                    () => {
-                        console.error('Failed to load Google API');
-                        showError('Google API Loading Failed', new Error('Please check if Google services are accessible from your network'));
-                        // Enable basic file viewing without upload
-                        enableBasicMode();
-                    }
-                );
-            } else {
-                gapiLoaded();
-            }
-            
-            // Try to load GIS
-            if (typeof google === 'undefined' || !google.accounts) {
-                console.log('Loading Google Identity Services...');
-                loadScript(
-                    'https://accounts.google.com/gsi/client',
-                    () => {
-                        console.log('Google Identity Services loaded successfully');
-                        if (typeof gisLoaded === 'function') {
-                            gisLoaded();
-                        }
-                    },
-                    () => {
-                        console.error('Failed to load Google Identity Services');
-                        // Enable basic file viewing without upload
-                        enableBasicMode();
-                    }
-                );
-            } else {
-                gisLoaded();
-            }
-        }
-        
-        // Enable basic PDF viewing without Google Drive features
-        function enableBasicMode() {
-            console.log('Enabling basic mode - PDF viewing only');
-            // Hide upload/generate buttons
-            uploadButton.style.display = 'none';
-            generateLinkButton.style.display = 'none';
-            
-            // Show message
-            const basicModeMsg = document.createElement('div');
-            basicModeMsg.style.cssText = 'color: #ffa500; font-size: 12px; padding: 5px;';
-            basicModeMsg.textContent = 'Google services unavailable - Local file viewing only';
-            document.querySelector('.controls-left').appendChild(basicModeMsg);
-            
-            // Still check for shared file in URL
-            checkFileIdInURL();
-        }
+        // Initialize GAPI
+        gapiLoaded();
+        gisLoaded();
     </script>
-
+    <script async defer src="https://apis.google.com/js/api.js" onload="gapiLoaded()"></script>
+    <script async defer src="https://accounts.google.com/gsi/client" onload="gisLoaded()"></script>
 </body>
 </html>
