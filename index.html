@@ -1176,45 +1176,97 @@
         panUp.addEventListener('click', (e) => {
             e.preventDefault();
             e.stopPropagation();
-            // Calculate pan amount based on viewport height, not content height
-            const panAmount = Math.min(150, pdfContent.clientHeight * 0.3);
-            pdfContent.scrollBy({
-                top: -panAmount,
-                behavior: 'smooth'
-            });
+            
+            const currentScroll = pdfContent.scrollTop;
+            const viewportHeight = pdfContent.clientHeight;
+            
+            // If we're close to the top (within one viewport height), go all the way
+            if (currentScroll <= viewportHeight) {
+                pdfContent.scrollTo({
+                    top: 0,
+                    behavior: 'smooth'
+                });
+            } else {
+                // Otherwise, scroll by 30% of viewport
+                const panAmount = viewportHeight * 0.3;
+                pdfContent.scrollBy({
+                    top: -panAmount,
+                    behavior: 'smooth'
+                });
+            }
         });
 
         panDown.addEventListener('click', (e) => {
             e.preventDefault();
             e.stopPropagation();
-            // Calculate pan amount based on viewport height, not content height
-            const panAmount = Math.min(150, pdfContent.clientHeight * 0.3);
-            pdfContent.scrollBy({
-                top: panAmount,
-                behavior: 'smooth'
-            });
+            
+            const currentScroll = pdfContent.scrollTop;
+            const maxScroll = pdfContent.scrollHeight - pdfContent.clientHeight;
+            const viewportHeight = pdfContent.clientHeight;
+            const remainingScroll = maxScroll - currentScroll;
+            
+            // If we're close to the bottom (within one viewport height), go all the way
+            if (remainingScroll <= viewportHeight) {
+                pdfContent.scrollTo({
+                    top: maxScroll,
+                    behavior: 'smooth'
+                });
+            } else {
+                // Otherwise, scroll by 30% of viewport
+                const panAmount = viewportHeight * 0.3;
+                pdfContent.scrollBy({
+                    top: panAmount,
+                    behavior: 'smooth'
+                });
+            }
         });
 
         panLeft.addEventListener('click', (e) => {
             e.preventDefault();
             e.stopPropagation();
-            // Calculate pan amount based on viewport width, not content width
-            const panAmount = Math.min(150, pdfContent.clientWidth * 0.3);
-            pdfContent.scrollBy({
-                left: -panAmount,
-                behavior: 'smooth'
-            });
+            
+            const currentScroll = pdfContent.scrollLeft;
+            const viewportWidth = pdfContent.clientWidth;
+            
+            // If we're close to the left (within one viewport width), go all the way
+            if (currentScroll <= viewportWidth) {
+                pdfContent.scrollTo({
+                    left: 0,
+                    behavior: 'smooth'
+                });
+            } else {
+                // Otherwise, scroll by 30% of viewport
+                const panAmount = viewportWidth * 0.3;
+                pdfContent.scrollBy({
+                    left: -panAmount,
+                    behavior: 'smooth'
+                });
+            }
         });
 
         panRight.addEventListener('click', (e) => {
             e.preventDefault();
             e.stopPropagation();
-            // Calculate pan amount based on viewport width, not content width
-            const panAmount = Math.min(150, pdfContent.clientWidth * 0.3);
-            pdfContent.scrollBy({
-                left: panAmount,
-                behavior: 'smooth'
-            });
+            
+            const currentScroll = pdfContent.scrollLeft;
+            const maxScroll = pdfContent.scrollWidth - pdfContent.clientWidth;
+            const viewportWidth = pdfContent.clientWidth;
+            const remainingScroll = maxScroll - currentScroll;
+            
+            // If we're close to the right (within one viewport width), go all the way
+            if (remainingScroll <= viewportWidth) {
+                pdfContent.scrollTo({
+                    left: maxScroll,
+                    behavior: 'smooth'
+                });
+            } else {
+                // Otherwise, scroll by 30% of viewport
+                const panAmount = viewportWidth * 0.3;
+                pdfContent.scrollBy({
+                    left: panAmount,
+                    behavior: 'smooth'
+                });
+            }
         });
 
         // Protection event listeners
